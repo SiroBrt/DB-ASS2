@@ -26,3 +26,21 @@ WHERE (TITLE, AUTHOR) NOT IN (
 -- 60 rows
 
 --  ------------------  Reports on Employees  --------------------
+SELECT
+    FULLNAME, 
+    FLOOR(
+        MONTHS_BETWEEN(
+            TRUNC(sysdate),
+            BIRTHDATE
+        )/12
+    ) AS AGE, 
+    BIRTHDATE,
+    CASE
+        WHEN CONT_END IS NULL THEN NULL
+        ELSE FLOOR((CONT_END - CONT_START)/365.25)
+    END AS CONTRACTED_YEARS
+    -- AS ACTIVE_YEARS, 
+    -- AS STOPS_PER_ACTIVE_YEAR,
+    -- AS LOANS_PER_ACTIVE_YEAR,
+    -- AS UNRETURNED_LOANS
+FROM DRIVERS;

@@ -1,20 +1,18 @@
--- QUERIES -------------------------------------------
--- -----------------------------------------------------
+-- ---------------------- QUERIES ---------------------
+-- ----------------------------------------------------
 
---  ------------------  BoreBooks--  --------------------
+--  ------------------  BoreBooks  ----------------------
 --  -----------------------------------------------------
 --  Books: 
---      whose editions are in AT LEAST 3 different languages 
---      whose copies that have NEVER been loaned
+--      B3: whose editions are in AT LEAST 3 different languages 
+--          whose copies that have NEVER been loaned
 WITH 
     B3 AS (
         SELECT COUNT(DISTINCT LANGUAGE), TITLE, AUTHOR
         FROM EDITIONS
         GROUP BY TITLE, AUTHOR HAVING COUNT(DISTINCT LANGUAGE) > 2
-    )                                       -- books with editions on more than 2 different languages
-SELECT DISTINCT TITLE, AUTHOR
-    FROM B3                              
-    WHERE (TITLE, AUTHOR) NOT IN ( 
+    ),
+    LB AS ( 
         SELECT DISTINCT TITLE, AUTHOR
         FROM EDITIONS
         WHERE ISBN IN (
@@ -22,84 +20,83 @@ SELECT DISTINCT TITLE, AUTHOR
             FROM COPIES C
             JOIN LOANS L
             ON C.SIGNATURE = L.SIGNATURE
-        )                                   -- editions that were loaned at least once
-    )                                       -- books that were laoned at least once
+        )                                     -- editions that were loaned at least once
+    )                                         -- books that were laoned at least once
+SELECT DISTINCT B3.TITLE, B3.AUTHOR
+    FROM B3
+    LEFT JOIN LB                              
+    ON LB.TITLE = B3.TITLE AND LB.AUTHOR = B3.AUTHOR
+    WHERE LB.TITLE IS NULL AND LB.AUTHOR IS NULL 
 ;
 -- 60 rows
 
 --  ------------------  Reports on Employees  --------------------
 --  --------------------------------------------------------------
+
+-- NO BIBUSERO HAS END OF CONTRACT SO CANNOT VERIFY IF IT WORKS
 WITH 
-    TOTAL_LOANS_BY_DRIVER AS (
-        SELECT 
-            CASE
-                WHEN SUM(N_LOANS) IS NULL THEN 0
-                ELSE SUM(N_LOANS) 
-            END AS TOTAL_LOANS, 
-            SERVICES.PASSPORT
-        FROM SERVICES 
-        LEFT JOIN (
-        SELECT COUNT(*) AS N_LOANS, TOWN, PROVINCE, STOPDATE 
-            FROM LOANS
-            GROUP BY TOWN, PROVINCE, STOPDATE
-            ORDER BY COUNT(*) DESC
-        ) N_LOANS_BY_SERVICE
-        ON SERVICES.TOWN = N_LOANS_BY_SERVICE.TOWN
-            AND SERVICES.PROVINCE = N_LOANS_BY_SERVICE.PROVINCE
-            AND SERVICES.TASKDATE = N_LOANS_BY_SERVICE.STOPDATE
-        GROUP BY SERVICES.PASSPORT
-        ORDER BY TOTAL_LOANS DESC
-    ),
-    UNRETURNED_LOANS_BY_DRIVER AS (
+    DRIVER_STATS AS (
         SELECT 
             CASE
                 WHEN SUM(N_LOANS) IS NULL THEN 0
                 ELSE SUM(N_LOANS) 
             END AS UNRETURNED_LOANS, 
+            CASE 
+                WHEN SUM(N_UNRETURNED_LOANS) IS NULL THEN 0 
+                ELSE SUM(N_UNRETURNED_LOANS) 
+            END AS TOTAL_LOANS,
+            COUNT(*) AS TOTAL_STOPS,
             SERVICES.PASSPORT
         FROM SERVICES 
         LEFT JOIN (
-        SELECT COUNT(*) AS N_LOANS, TOWN, PROVINCE, STOPDATE 
+            SELECT 
+                COUNT(RETURN) AS N_LOANS, 
+                COUNT(CASE WHEN RETURN < TRUNC(SYSDATE) THEN 1 END) AS N_UNRETURNED_LOANS,
+                TOWN, PROVINCE, STOPDATE 
             FROM LOANS
-            WHERE RETURN < TRUNC(SYSDATE)
             GROUP BY TOWN, PROVINCE, STOPDATE
-            ORDER BY COUNT(*) DESC
-        ) N_UNRETURNED_LOANS_BY_SERVICE
-        ON SERVICES.TOWN = N_UNRETURNED_LOANS_BY_SERVICE.TOWN
-            AND SERVICES.PROVINCE = N_UNRETURNED_LOANS_BY_SERVICE.PROVINCE
-            AND SERVICES.TASKDATE = N_UNRETURNED_LOANS_BY_SERVICE.STOPDATE
+            -- ORDER BY COUNT(*) DESC
+        ) LOANS_BY_SERVICE
+        ON SERVICES.TOWN = LOANS_BY_SERVICE.TOWN
+            AND SERVICES.PROVINCE = LOANS_BY_SERVICE.PROVINCE
+            AND SERVICES.TASKDATE = LOANS_BY_SERVICE.STOPDATE
         GROUP BY SERVICES.PASSPORT
-        ORDER BY UNRETURNED_LOANS DESC
+        -- ORDER BY TOTAL_LOANS DESC
+    ),
+    DRIVER_DATA AS (
+        SELECT
+            D.PASSPORT,
+            D.FULLNAME,
+            FLOOR(
+                MONTHS_BETWEEN(TRUNC(sysdate), D.BIRTHDATE)/12
+            ) AS AGE, 
+            CASE
+                WHEN D.CONT_END IS NULL THEN -1
+                ELSE FLOOR((D.CONT_END - D.CONT_START)/365.25)
+            END AS CONTRACTED_YEARS,
+            FLOOR((SYSDATE - D.CONT_START)/365.25) AS ACTIVE_YEARS
+        FROM DRIVERS D
     )
 SELECT
     D.FULLNAME, 
-    FLOOR(
-        MONTHS_BETWEEN(
-            TRUNC(sysdate),
-            D.BIRTHDATE
-        )/12
-    ) AS AGE, 
+    D.AGE, 
+    D.CONTRACTED_YEARS,
+    D.ACTIVE_YEARS,
+    CASE 
+        WHEN D.ACTIVE_YEARS = 0 THEN S.TOTAL_STOPS
+        ELSE S.TOTAL_STOPS/D.ACTIVE_YEARS
+    END AS STOPS_PER_ACTIVE_YEAR,
+    CASE 
+        WHEN D.ACTIVE_YEARS = 0 THEN S.TOTAL_LOANS
+        ELSE S.TOTAL_LOANS/D.ACTIVE_YEARS
+    END AS LOANS_PER_ACTIVE_YEAR,
     CASE
-        WHEN D.CONT_END IS NULL THEN NULL
-        ELSE FLOOR((D.CONT_END - D.CONT_START)/365.25)
-    END AS CONTRACTED_YEARS,
-    -- AS ACTIVE_YEARS, 
-    -- AS STOPS_PER_ACTIVE_YEAR,
-    -- AS LOANS_PER_ACTIVE_YEAR,
-    UNRETURNED_LOANS_RATE.RATE AS RATE
-FROM DRIVERS D
-JOIN (
-    SELECT 
-        TOTAL_LOANS_BY_DRIVER.PASSPORT, 
-        CASE
-            WHEN TOTAL_LOANS_BY_DRIVER.TOTAL_LOANS = 0 THEN 0
-            ELSE
-                UNRETURNED_LOANS_BY_DRIVER.UNRETURNED_LOANS/TOTAL_LOANS_BY_DRIVER.TOTAL_LOANS 
-        END AS RATE
-    FROM TOTAL_LOANS_BY_DRIVER
-    JOIN UNRETURNED_LOANS_BY_DRIVER
-    ON TOTAL_LOANS_BY_DRIVER.PASSPORT = UNRETURNED_LOANS_BY_DRIVER.PASSPORT
-) UNRETURNED_LOANS_RATE
-ON D.PASSPORT = UNRETURNED_LOANS_RATE.PASSPORT
+        WHEN S.TOTAL_LOANS = 0 THEN 0
+        ELSE S.UNRETURNED_LOANS/S.TOTAL_LOANS
+    END AS RATE
+FROM DRIVER_DATA D
+JOIN DRIVER_STATS S
+ON D.PASSPORT = S.PASSPORT
+ORDER BY FULLNAME DESC
 ;
 

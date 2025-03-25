@@ -7,6 +7,9 @@ CREATE OR REPLACE PACKAGE BODY foundicu IS
     PROCEDURE insert_loan(signature IN loans.signature%TYPE);
     PROCEDURE insert_reservation(isbn IN editions.isbn%TYPE, reservation_date in date);
     PROCEDURE record_books_returning(signature IN loans.signature%TYPE);
+
+    PROCEDURE set_current_user(new_user IN CHAR(10));
+    FUNCTION get_current_user RETURN CHAR;
 END foundicu;
 
 

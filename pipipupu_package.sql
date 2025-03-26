@@ -6,7 +6,7 @@ CREATE OR REPLACE PACKAGE foundicu AS
     -- TYPE my_type IS RECORD (...);
     current_user CHAR(10);
     PROCEDURE insert_loan(signature IN loans.signature%TYPE);
-    -- PROCEDURE insert_reservation(isbn IN editions.isbn%TYPE, reservation_date in date);
+    PROCEDURE insert_reservation(isbn IN editions.isbn%TYPE, reservation_date in date);
     PROCEDURE record_books_returning(signature IN loans.signature%TYPE);
 
     -- PROCEDURE set_current_user(new_user IN current_user%TYPE);
@@ -59,13 +59,21 @@ CREATE OR REPLACE PACKAGE BODY foundicu AS
             THEN dbms_output.put_line('Current user is banned'); 
     END insert_loan;
 
-    -- PROCEDURE insert_reservation(isbn IN editions.isbn%TYPE, reservation_date in DATE) IS
-    -- BEGIN
-    --     SELECT * INTO user FROM users u
-    --         WHERE u.user_id = current_user;
+    PROCEDURE insert_reservation(isbn IN editions.isbn%TYPE, reservation_date in DATE) IS
+        loan_count NUMBER;
+        user_count NUMBER;
+        ban_date users.BAN_UP2%TYPE;
+    BEGIN
+        SELECT COUNT(*), BAN_UP2 INTO user_count, ban_date FROM users WHERE users.user_id = current_user;
+        SELECT COUNT(*) INTO loan_count FROM loans l
+            WHERE l.user_id = current_user
+                AND l.return IS NULL
+                AND l.type = 'L';
 
-    --     -- COMMIT;
-    -- END insert_reservation;
+        -- IF ELSE........
+
+        -- COMMIT;
+    END insert_reservation;
 
     -- IT SHOULD BE OK UNLESS WE THINK OF OTHER IMPEDIMENTS
     PROCEDURE record_books_returning(signature IN loans.signature%TYPE) IS
@@ -79,13 +87,11 @@ CREATE OR REPLACE PACKAGE BODY foundicu AS
             WHERE l.signature = signature 
                 AND l.user_id = current_user 
                 AND l.type = 'L';
-
         IF existing_loan = 0
             THEN RAISE no_loan;
         ELSIF return_value IS NOT NULL
             THEN RAISE book_already_returned;
         END IF;
-
         -- UPDATE RETURN OF LOAN
         UPDATE loans SET return = SYSDATE 
             WHERE signature = signature AND user_id = current_user;

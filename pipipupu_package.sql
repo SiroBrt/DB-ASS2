@@ -59,20 +59,59 @@ CREATE OR REPLACE PACKAGE BODY foundicu AS
             THEN dbms_output.put_line('Current user is banned'); 
     END insert_loan;
 
+    -- beautifu
     PROCEDURE insert_reservation(isbn IN editions.isbn%TYPE, reservation_date in DATE) IS
         loan_count NUMBER;
-        user_count NUMBER;
-        ban_date users.BAN_UP2%TYPE;
+        user_data users%ROWTYPE;
+        -- user_count NUMBER;
+        -- ban_date users.BAN_UP2%TYPE;
+        copy_signature copies.signature%TYPE;
+        user_does_not_exist EXCEPTION;
+        user_is_banned EXCEPTION;
+        no_available_copies EXCEPTION;
+        loan_limit_exceeded EXCEPTION;
     BEGIN
-        SELECT COUNT(*), BAN_UP2 INTO user_count, ban_date FROM users WHERE users.user_id = current_user;
+        SELECT * INTO user_data FROM users WHERE users.user_id = current_user;
         SELECT COUNT(*) INTO loan_count FROM loans l
             WHERE l.user_id = current_user
                 AND l.return IS NULL
                 AND l.type = 'L';
 
-        -- IF ELSE........
+        -- some copy that is available 14 days after reservation_date
+            -- excludes copy with reservation within 14 days after reservation_date 
+            -- excludes copy with a reservation/loan within 14 days before reservation_data
+        SELECT min(signature) INTO copy_signature FROM copies c
+            WHERE c.isbn = isbn
+                AND c.signature NOT IN (
+                    SELECT signature 
+                        FROM loans l 
+                        JOIN copies c
+                        ON c.isbn = isbn
+                        WHERE l.stopdate-14 <= reservation_date
+                            AND l.return+14 >= reservation_date
+                );
 
-        -- COMMIT;
+        -- IF ELSE........
+        IF user_data IS NULL 
+            THEN RAISE user_does_not_exist;
+        ELSIF SYSDATE < user_data.ban_up2
+            THEN RAISE user_is_banned;
+        ELSIF loan_count > 1
+            THEN RAISE loan_limit_exceeded;
+        ELSIF copy_signature IS NULL
+            THEN RAISE no_available_copies;
+            -- THEN dbms_output.put_line('No available copies of the book.');
+        END IF;
+
+        -- insert a stop route that goes to the user municipality (if it doesnt exist)
+            -- if it does not exist, then also create route 
+        -- create assign_drv and services
+        -- INSERT INTO assign_bus VALUES('plate', reservation_date, 'route');
+        -- INSERT INTO assign_drv VALUES('passport', reservation_date, 'route');
+        -- INSERT INTO services VALUES(user_data.town, user_data.province, 'bus', reservation_date, 'driver_passport');
+        -- assign a loan to the service
+        INSERT INTO loans VALUES(copy_signature, current_user, reservation_date, user_data.town, user_data.province, NULL, 'R', NULL);
+        COMMIT;
     END insert_reservation;
 
     -- IT SHOULD BE OK UNLESS WE THINK OF OTHER IMPEDIMENTS

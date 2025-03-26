@@ -12,6 +12,7 @@
 --  Books: 
 --      B3: whose editions are in AT LEAST 3 different languages 
 --          whose copies that have NEVER been loaned
+--      (using LB: books whose copies that has been loaned AT LEAST ONCE)
 WITH 
     B3 AS (
         SELECT COUNT(DISTINCT LANGUAGE), TITLE, AUTHOR

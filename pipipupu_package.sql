@@ -18,22 +18,21 @@ CREATE OR REPLACE PACKAGE BODY foundicu AS
 
     -- THIS SHIT IS NOT FINISHED AND I HATE THIS PUTA MIERDA
     PROCEDURE insert_loan(copy_signature IN loans.signature%TYPE) IS
-        user_count NUMBER;
         reservated NUMBER;
         ban_date users.BAN_UP2%TYPE;
 
-        user_does_not_exist EXCEPTION;
         user_is_banned EXCEPTION;
         copy_not_available EXCEPTION;
     BEGIN
         -- CHECK IF USER EXISTS (THROUGH USER_COUNT VALUE) AND IF THE USER IS BANNED
-        SELECT COUNT(*), BAN_UP2 INTO user_count, ban_date FROM users 
-            WHERE users.user_id = current_user
-            GROUP BY BAN_UP2;
-        
-        IF user_count = 0 
-            THEN RAISE user_does_not_exist;
-        END IF;
+        BEGIN
+            SELECT BAN_UP2 INTO ban_date FROM users 
+                WHERE users.user_id = current_user
+                GROUP BY BAN_UP2;
+        EXCEPTION
+            WHEN NO_DATA_FOUND
+                THEN dbms_output.put_line('Error. Current user does not exist'); 
+        END;
         
         -- CHECK IS THERE IS AN EXISTING RESERVATION FOR THE BOOK
         SELECT COUNT(*) INTO reservated FROM loans l
@@ -54,12 +53,11 @@ CREATE OR REPLACE PACKAGE BODY foundicu AS
         -- WHERE l.signature = signature AND l.user_id = current_user;
         COMMIT;
     EXCEPTION
-        WHEN NO_DATA_FOUND
-            THEN dbms_output.put_line('Error. Current user does not exist'); 
         WHEN user_is_banned 
             THEN dbms_output.put_line('Abort. Current user is banned'); 
     END insert_loan;
 
+    
     PROCEDURE insert_reservation(isbn IN editions.isbn%TYPE, reservation_date in DATE) IS
         loan_count NUMBER;
         user_count NUMBER;
@@ -76,7 +74,7 @@ CREATE OR REPLACE PACKAGE BODY foundicu AS
         -- COMMIT;
     END insert_reservation;
 
-    -- IT SHOULD BE OK UNLESS WE THINK OF OTHER IMPEDIMENTS
+    -- IT SHOULD BE OK
     PROCEDURE record_books_returning(copy_signature IN loans.signature%TYPE) IS
         loan_count NUMBER;
         no_loan_found EXCEPTION;
@@ -102,7 +100,7 @@ CREATE OR REPLACE PACKAGE BODY foundicu AS
         WHEN no_loan_found THEN
             dbms_output.put_line('Error. No unreturned loan of this copy by current user has been found.');
         WHEN multiple_loans_found THEN
-            dbms_output.put_line('Error. Found multiple unreturned loans of the same book by the same user.');
+            dbms_output.put_line('Error. Found multiple unreturned loans of the same book by current user.');
     END record_books_returning;
 
     

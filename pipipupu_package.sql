@@ -85,8 +85,7 @@ CREATE OR REPLACE PACKAGE BODY foundicu AS
                 AND c.signature NOT IN (
                     SELECT signature 
                         FROM loans l 
-                        JOIN copies c
-                        ON c.isbn = isbn
+                        JOIN copies c ON c.isbn = isbn
                         WHERE l.stopdate-14 <= reservation_date
                             AND l.return+14 >= reservation_date
                 );
@@ -100,7 +99,6 @@ CREATE OR REPLACE PACKAGE BODY foundicu AS
             THEN RAISE loan_limit_exceeded;
         ELSIF copy_signature IS NULL
             THEN RAISE no_available_copies;
-            -- THEN dbms_output.put_line('No available copies of the book.');
         END IF;
 
         -- insert a stop route that goes to the user municipality (if it doesnt exist)
@@ -112,6 +110,15 @@ CREATE OR REPLACE PACKAGE BODY foundicu AS
         -- assign a loan to the service
         INSERT INTO loans VALUES(copy_signature, current_user, reservation_date, user_data.town, user_data.province, NULL, 'R', NULL);
         COMMIT;
+    EXCEPTION
+        WHEN user_does_not_exist 
+            THEN dbms_output.put_line('Error. Current user does not exist.');
+        WHEN user_is_banned
+            THEN dbms_output.put_line('Abort. User is currently banned.');
+        WHEN loan_limit_exceeded
+            THEN dbms_output.put_line('Abort. User loan limit exceeded.');
+        WHEN no_available_copies
+            THEN dbms_output.put_line('Abort. No available copies for loaning.');
     END insert_reservation;
 
     -- IT SHOULD BE OK UNLESS WE THINK OF OTHER IMPEDIMENTS

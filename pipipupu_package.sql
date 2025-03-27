@@ -8,6 +8,8 @@ CREATE OR REPLACE PACKAGE foundicu AS
     PROCEDURE insert_loan(copy_signature IN loans.signature%TYPE);
     PROCEDURE insert_reservation(isbn IN editions.isbn%TYPE, reservation_date in date);
     PROCEDURE record_books_returning(copy_signature IN loans.signature%TYPE);
+    
+    -- FUNCTION insert_service(town IN services.town%TYPE, province IN services.province%TYPE, taskdate IN services.taskdate%TYPE) RETURN NUMBER;
 
     PROCEDURE set_current_user(new_user IN current_user%TYPE);
     FUNCTION get_current_user RETURN current_user%TYPE;
@@ -49,8 +51,6 @@ CREATE OR REPLACE PACKAGE BODY foundicu AS
             -- INSERT INTO LOANS VALUES(signature, user_id, SYSDATE, town, province, type, time, return);
         END IF;
         
-        -- SELECT signature, user_id, stopdate, type FROM loans l
-        -- WHERE l.signature = signature AND l.user_id = current_user;
         COMMIT;
     EXCEPTION
         WHEN user_is_banned 
@@ -59,17 +59,29 @@ CREATE OR REPLACE PACKAGE BODY foundicu AS
 
     -- beautifu
     PROCEDURE insert_reservation(isbn IN editions.isbn%TYPE, reservation_date in DATE) IS
-        loan_count NUMBER;
-        user_data users%ROWTYPE;
-        -- user_count NUMBER;
-        -- ban_date users.BAN_UP2%TYPE;
         copy_signature copies.signature%TYPE;
-        user_does_not_exist EXCEPTION;
+        user_data users%ROWTYPE;
+        stop_time stops.time%TYPE;
+        loan_count NUMBER;
+        existing_service NUMBER;
         user_is_banned EXCEPTION;
         no_available_copies EXCEPTION;
         loan_limit_exceeded EXCEPTION;
+        fuck_you EXCEPTION;
     BEGIN
-        SELECT * INTO user_data FROM users WHERE users.user_id = current_user;
+        BEGIN
+            SELECT * INTO user_data FROM users WHERE users.user_id = current_user;
+        EXCEPTION
+            WHEN NO_DATA_FOUND
+                THEN dbms_output.put_line('Error. Current user does not exist.');
+            WHEN TOO_MANY_ROWS
+                THEN dbms_output.put_line('Error. Multiple current users found with the same primary key.');
+        END;
+        
+        IF SYSDATE < user_data.ban_up2
+            THEN RAISE user_is_banned;
+        END IF;
+
         SELECT COUNT(*) INTO loan_count FROM loans l
             WHERE l.user_id = current_user
                 AND l.return IS NULL
@@ -80,37 +92,44 @@ CREATE OR REPLACE PACKAGE BODY foundicu AS
             -- excludes copy with a reservation/loan within 14 days before reservation_data
         SELECT min(signature) INTO copy_signature FROM copies c
             WHERE c.isbn = isbn
-                AND c.signature NOT IN (
-                    SELECT signature 
-                        FROM loans l 
-                        JOIN copies c ON c.isbn = isbn
-                        WHERE l.stopdate-14 <= reservation_date
-                            AND l.return+14 >= reservation_date
-                );
+            AND c.signature NOT IN (
+                SELECT signature 
+                    FROM loans l 
+                    JOIN copies c ON c.isbn = isbn
+                    WHERE l.stopdate-14 <= reservation_date
+                        AND l.return+14 >= reservation_date
+            );
 
-        -- IF ELSE........
-        IF user_data IS NULL 
-            THEN RAISE user_does_not_exist;
-        ELSIF SYSDATE < user_data.ban_up2
-            THEN RAISE user_is_banned;
-        ELSIF loan_count > 1
+        -- IF ELSE .......      
+        IF loan_count > 1
             THEN RAISE loan_limit_exceeded;
         ELSIF copy_signature IS NULL
             THEN RAISE no_available_copies;
         END IF;
 
-        -- insert a stop route that goes to the user municipality (if it doesnt exist)
-            -- if it does not exist, then also create route 
-        -- create assign_drv and services
-        -- INSERT INTO assign_bus VALUES('plate', reservation_date, 'route');
-        -- INSERT INTO assign_drv VALUES('passport', reservation_date, 'route');
-        -- INSERT INTO services VALUES(user_data.town, user_data.province, 'bus', reservation_date, 'driver_passport');
-        -- assign a loan to the service
-        INSERT INTO loans VALUES(copy_signature, current_user, reservation_date, user_data.town, user_data.province, NULL, 'R', NULL);
+        SELECT COUNT(*), time INTO existing_service, stop_time FROM SERVICES
+            JOIN stops ON SERVICES.town = stops.town AND SERVICES.province = stops.province
+            WHERE town = user_data.town
+                AND province = user_data.province
+                AND taskdate = reservation_date; 
+        
+        IF existing_service = 0 
+            THEN RAISE FUCK_YOU;
+            -- 💀
+            -- insert a stop route that goes to the user municipality (if it doesnt exist)
+                -- if it does not exist, then also create route 
+            -- create assign_drv and services
+            -- INSERT INTO assign_bus VALUES('plate', reservation_date, 'route');
+            -- INSERT INTO assign_drv VALUES('passport', reservation_date, 'route');
+            -- INSERT INTO services VALUES(user_data.town, user_data.province, 'bus', reservation_date, 'driver_passport');
+            -- assign a loan to the service
+        ELSE
+            INSERT INTO LOANS VALUES(copy_signature, current_user, reservation_date, user_data.town, user_data.province, stop_time, 'R', NULL);
+        END IF;
         COMMIT;
     EXCEPTION
-        WHEN user_does_not_exist 
-            THEN dbms_output.put_line('Error. Current user does not exist.');
+        WHEN fuck_you
+            THEN dbms_output.put_line('FUCK YOU. Dont insert a reservation when we dont have a bus to deliver it to you.');
         WHEN user_is_banned
             THEN dbms_output.put_line('Abort. User is currently banned.');
         WHEN loan_limit_exceeded

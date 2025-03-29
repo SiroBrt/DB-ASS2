@@ -56,3 +56,15 @@ SELECT COUNT(*) FROM (
 -- JOIN loans l ON l.signature = c.signature
 -- GROUP BY e.title, e.author
 -- HAVING COUNT(*) > 5;
+-- 1.4.d
+CREATE OR REPLACE TRIGGER update_book_read
+AFTER INSERT OR UPDATE ON TYPE
+FOR EACH ROW WHEN (NEW.TYPE='L')
+BEGIN
+    -- obtain loan's book title and author
+
+    -- increase reads count 
+    UPDATE books 
+        SET reads=reads+1 
+        WHERE title=loan_title AND author=loan_author
+END;

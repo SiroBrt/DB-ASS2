@@ -11,5 +11,5 @@ BEGIN
     -- increase reads count 
     UPDATE books 
         SET reads=reads+1 
-        WHERE title=title AND author=author
+        WHERE title=loan_title AND author=loan_author
 END;

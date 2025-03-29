@@ -37,3 +37,12 @@ SELECT
 FROM loans l
 WHERE loans.user_id = current_user AND loans.type = 'R'
 WITH CHECK OPTION;
+
+-- CREATE OR REPLACE TRIGGER my_reservations_trigger
+-- BEFORE INSERT OR UPDATE OF TIME ON my_reservations
+-- FOR EACH ROW
+-- BEGIN
+--     IF :NEW.TIME < 0 OR :NEW.TIME > 30 THEN
+--         RAISE_APPLICATION_ERROR(-20001, 'Time must be between 0 and 30 days');
+--     END IF;
+-- END;

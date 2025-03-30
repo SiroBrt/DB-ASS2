@@ -25,3 +25,8 @@ begin
   foundicu.set_current_user(1546522482);
   foundicu.record_books_returning('IJ548');
 end;
+
+
+
+-- 1.3.1 TESTS
+INSERT INTO my_data VALUES('1', '1111', NULL, SYSDATE, '', '', '', NULL, 1111111111111, 'P', NULL);

@@ -1,3 +1,6 @@
+SET LINESIZE 1000;
+SET WRAP OFF;
+
 -- 1.2.1 tests
 begin
   foundicu.set_current_user(1546522482);

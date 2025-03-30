@@ -35,5 +35,5 @@ SELECT
     TIME,
     RETURN
 FROM loans l
-WHERE loans.user_id = current_user AND loans.type = 'R'
+WHERE loans.user_id = foundicu.current_user AND loans.type = 'R'
 WITH CHECK OPTION;

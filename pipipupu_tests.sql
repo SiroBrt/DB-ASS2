@@ -4,6 +4,7 @@ begin
   foundicu.insert_loan('NE000');
 end;
 
+INSERT INTO loans VALUES('NE000', 1546522482, SYSDATE+200, 'Madrid', 'Madrid', 'R', 30, NULL);
 
 -- 1.2.3 TESTS
 SELECT SIGNATURE, USER_ID, STOPDATE, RETURN FROM LOANS 

@@ -1,9 +1,13 @@
+SET LINESIZE 1000;
+SET WRAP OFF;
+
 -- 1.2.1 tests
 begin
   foundicu.set_current_user(1546522482);
   foundicu.insert_loan('NE000');
 end;
 
+INSERT INTO loans VALUES('NE000', 1546522482, SYSDATE+200, 'Madrid', 'Madrid', 'R', 30, NULL);
 
 -- 1.2.3 TESTS
 SELECT SIGNATURE, USER_ID, STOPDATE, RETURN FROM LOANS 
@@ -21,3 +25,8 @@ begin
   foundicu.set_current_user(1546522482);
   foundicu.record_books_returning('IJ548');
 end;
+
+
+
+-- 1.3.1 TESTS
+INSERT INTO my_data VALUES('1', '1111', NULL, SYSDATE, '', '', '', NULL, 1111111111111, 'P', NULL);

@@ -30,3 +30,8 @@ end;
 
 -- 1.3.1 TESTS
 INSERT INTO my_data VALUES('1', '1111', NULL, SYSDATE, '', '', '', NULL, 1111111111111, 'P', NULL);
+
+
+-- 1.4.D TESTS
+-- SELECT title, author, reads FROM books
+--     WHERE reads > 5;

@@ -1,7 +1,14 @@
 -- ---------------------- TRIGGERS ---------------------
 -- ----------------------------------------------------
 
+---- TASK 1.4.B
+    
+
+
 ---- TASK 1.4.D
+    -- Add new constraint to loans to avoid exploits
+    ALTER TABLE loans ADD CONSTRAINT ck_type CHECK (condition in ('L', 'R') )
+
     -- Create new column 'reads' in table 'books'
     ALTER TABLE books ADD reads INTEGER DEFAULT 0;
 
@@ -21,7 +28,7 @@
     END;
 
     ---- Create trigger that updates read counter upon new loan insertion, update or deletion.
-    CREATE OR REPLACE TRIGGER trg_compound_test
+    CREATE OR REPLACE TRIGGER update_book_read
         FOR INSERT OR UPDATE OF types OR DELETE ON employees
     COMPOUND TRIGGER
         loan_title editions.title%TYPE;
@@ -44,7 +51,7 @@
                     JOIN copies c ON e.isbn=c.isbn
                     WHERE c.signature=:OLD.signature;
 
-                -- Increase reads count 
+                -- Decrease reads count 
                 UPDATE books 
                     SET reads=reads-1 
                     WHERE title=loan_title AND author=loan_author;
@@ -67,8 +74,3 @@
             END IF;
         END AFTER EACH ROW;
     END;
-
-    -- -- TESTS
-    -- SELECT title, author, reads FROM books
-    --     WHERE reads > 5;
-

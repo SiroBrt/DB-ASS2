@@ -205,11 +205,11 @@ CREATE OR REPLACE PACKAGE BODY foundicu AS
                 THEN dbms_output.put_line('Error. Multiple current users found with the same primary key.');
         END;
         -- and has quota for reserving (has not reached the upper borrowing limit
-        SELECT COUNT(*) INTO count_reservations FROM LOANS l
+        SELECT COUNT(*) INTO loan_count FROM LOANS l
             WHERE l.user_id = current_user
                 AND l.return > SYSDATE
                 AND l.type = 'L';
-        IF count_reservations > 2
+        IF loan_count > 2
             THEN dbms_output.put_line('Error. Current user has reached the upper limit for loans');
             RETURN;
         END IF;

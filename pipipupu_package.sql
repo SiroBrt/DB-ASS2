@@ -118,6 +118,7 @@ CREATE OR REPLACE PACKAGE BODY foundicu AS
 
         stop_time stops.time%TYPE;
         loan_count NUMBER;
+        date_of_service services.taskdate%TYPE;
     /*
         existing_service NUMBER;
         user_is_banned EXCEPTION;
@@ -236,8 +237,17 @@ CREATE OR REPLACE PACKAGE BODY foundicu AS
         END IF;
         -- and then places the hold (else, reports the hinder). 
         
+        SELECT min(TASKDATE), COUNT(*) INTO date_of_service, count_reservations FROM SERVICES
+            JOIN STOPS ON SERVICES.town = stops.town AND SERVICES.province = stops.province
+            WHERE TOWN = user_data.town
+                AND PROVINCE = user_data.province
+                AND TASKDATE > reservation_date; 
+        IF count_reservations = 0 
+            THEN dbms_output.put_line('Error. No service available for the following dates.');
+            RETURN;
+        END IF;
         INSERT INTO LOANS (SIGNATURE, USER_ID, STOPDATE, TOWN, PROVINCE, TYPE, TIME, RETURN) 
-            VALUES (copy_signature, current_user, reservation_date, user_data.town, user_data.province, 'R', DEFAULT, reservation_date + 14); -- to have return date two weeks from reservation
+            VALUES (copy_signature, current_user, date_of_service, user_data.town, user_data.province, 'R', DEFAULT, date_of_service + 14); -- to have return date two weeks from reservation
         
 
     END insert_reservation;

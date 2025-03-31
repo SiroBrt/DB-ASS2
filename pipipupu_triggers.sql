@@ -2,7 +2,30 @@
 -- ----------------------------------------------------
 
 ---- TASK 1.4.B
-    
+    -- Prevents changing status of 'D' copies
+    -- Updates deregistration date when copy is deregistered
+    CREATE OR REPLACE TRIGGER copy_deregistration
+        FOR INSERT OR UPDATE OF CONDITION ON copies
+    COMPOUND TRIGGER
+        BEFORE EACH ROW IS
+        BEGIN 
+            IF UPDATING THEN
+                IF :OLD.CONDITION='D' AND :NEW.CONDITION<>'D' THEN
+                    RAISE_APPLICATION_ERROR(-20001, 'Cannot change copy condition from deregistered to another value (they are already physically destroyed)!');
+                END IF;
+            END IF;
+        END BEFORE EACH ROW;
+
+        -- Update deregistration date
+        AFTER EACH ROW IS
+        BEGIN
+            IF :NEW.DEREGISTERED='D' THEN
+                UPDATE copies
+                    SET DEREGISTERED = SYSDATE
+                    WHERE SIGNATURE = :NEW.SIGNATURE;
+            END IF;
+        END AFTER EACH ROW;
+    END copy_deregistration;
 
 
 ---- TASK 1.4.D

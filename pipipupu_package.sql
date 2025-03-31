@@ -20,35 +20,86 @@ CREATE OR REPLACE PACKAGE BODY foundicu AS
 
     -- THIS SHIT IS NOT FINISHED AND I HATE THIS PUTA MIERDA
     PROCEDURE insert_loan(copy_signature IN loans.signature%TYPE) IS
-        reservated NUMBER;
+        --reservated NUMBER;
         ban_date users.BAN_UP2%TYPE;
+        count_users NUMBER;
+        count_reservations NUMBER;
 
         user_is_banned EXCEPTION;
         copy_not_available EXCEPTION;
     BEGIN
+        /*
         -- CHECK IF USER EXISTS (THROUGH USER_COUNT VALUE) AND IF THE USER IS BANNED
         BEGIN
-            SELECT BAN_UP2 INTO ban_date FROM users 
+            SELECT BAN_UP2 INTO ban_date,  FROM users 
                 WHERE users.user_id = current_user
                 GROUP BY BAN_UP2;
         EXCEPTION
             WHEN NO_DATA_FOUND
                 THEN dbms_output.put_line('Error. Current user does not exist'); 
         END;
-        
-        -- CHECK IS THERE IS AN EXISTING RESERVATION FOR THE BOOK
-        SELECT COUNT(*) INTO reservated FROM loans l
-            WHERE l.signature = copy_signature 
-                AND l.user_id = current_user
-                AND l.type = 'R';
+        */
+        -- go through users and check by primary key if there is such user as current
+        SELECT BAN_UP2 INTO ban_date, COUNT (*) INTO count_users FROM USERS
+            WHERE USER_ID = current_user;
+        IF count_users = 0 THEN
+            -- if nUot, raise error
+            dbms_output.put_line('Error. Current user does not exist');
+            RETURN;
+        ELSE
+            dbms_output.put_line('Current user exists');
+        END IF;
 
-        IF reservated <> 0
-            THEN UPDATE LOANS l SET TYPE='L' WHERE l.user_id=current_user AND l.signature=signature;
+        -- CHECK IS THERE IS AN EXISTING RESERVATION FOR THE BOOK
+        SELECT COUNT(*) INTO count_reservations FROM LOANS
+            WHERE USER_ID = current_user
+            AND SIGNATURE = copy_signature
+            AND TYPE = 'R';
+
+        IF count_reservations <> 0
+            -- if there is a reservation, update the loan type to 'L'
+            --THEN UPDATE LOANS l SET TYPE='L' WHERE l.user_id=current_user AND l.signature=signature;
+            THEN UPDATE LOANS SET TYPE = 'L' 
+                WHERE USER_ID = current_user
+                AND SIGNATURE = copy_signature;
+            dbms_output.put_line('Loan updated from reservation to loan');
+        
+        -- if the user has not reached the upper limit for loans, check if the user is not sanctioned
         ELSIF SYSDATE < ban_date
             THEN RAISE user_is_banned;
-        -- ELSE
+        ELSE
             -- to insert new loan, we need to insert a new route and assign drv
             -- INSERT INTO LOANS VALUES(signature, user_id, SYSDATE, town, province, type, time, return);
+            dbms_output.put_line('No reservation found for this user');
+            -- if there is no reservation, check reservations with this book comparing time and stop dates to check if the copy is available for two weeks
+            SELECT COUNT(*) INTO count_reservations FROM LOANS 
+                WHERE SIGNATURE = copy_signature
+                AND RETURN > SYSDATE + 14;
+
+            IF count_reservations = 0 THEN
+            -- if the copy is available, check if the user has not reached the upper limit for loans by counting his loans
+                SELECT COUNT(*) INTO count_reservations FROM LOANS 
+                    WHERE USER_ID = current_user
+                    AND TYPE = 'L'
+                    AND RETURN > SYSDATE; -- meaning the book loaned and not returned yet
+                IF count_reservations < 3 THEN
+                    -- if the user is not sanctioned(and it is not as at the very beginning the error would be raised), insert a new loan row
+                    INSERT INTO LOANS (SIGNATURE, USER_ID, STOPDATE, TOWN, PROVINCE, TYPE, TIME, RETURN) 
+                        VALUES (copy_signature, current_user, SYSDATE, 
+                        (SELECT TOWN FROM USERS WHERE USER_ID = current_user), 
+                        (SELECT PROVINCE FROM USERS WHERE USER_ID = current_user), 
+                        'L', SYSDATE, SYSDATE + 14); -- to have return date two weeks from now
+                    dbms_output.put_line('New loan inserted');
+                ELSE
+                    -- if the user has reached the upper limit for loans, raise error
+                    dbms_output.put_line('Error. Current user has reached the upper limit for loans');
+                    RETURN;
+                END IF;
+            -- if the copy is not available, raise error
+            ELSE
+                dbms_output.put_line('Error. Copy is not available for two weeks');
+                RETURN;
+            END IF;
         END IF;
         
         COMMIT;

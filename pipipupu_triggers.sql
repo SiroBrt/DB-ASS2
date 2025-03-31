@@ -20,24 +20,52 @@
         END LOOP;
     END;
 
-    ---- Create trigger that updates read counter upon new loan insertion
-    CREATE OR REPLACE TRIGGER update_book_read
-        AFTER INSERT OR UPDATE OF type ON loans
-        FOR EACH ROW 
-    WHEN (NEW.TYPE='L')
-    DECLARE 
+    ---- Create trigger that updates read counter upon new loan insertion, update or deletion.
+    CREATE OR REPLACE TRIGGER trg_compound_test
+        FOR INSERT OR UPDATE OF types OR DELETE ON employees
+    COMPOUND TRIGGER
         loan_title editions.title%TYPE;
         loan_author editions.author%TYPE;
-    BEGIN
-        -- Obtain loan's book title and author
-        SELECT e.title, e.author INTO loan_title, loan_author FROM editions e
-            JOIN copies c ON e.isbn=c.isbn
-            WHERE c.signature=:NEW.signature;
+        
+        BEFORE EACH ROW IS
+        BEGIN
+            IF UPDATING THEN
+                IF :NEW.type = 'R' AND :OLD.type = 'L' THEN
+                    RAISE_APPLICATION_ERROR(-20001, 'Cannot change froma loan to a reservation!');
+                END IF;
+            END IF;
+        END BEFORE EACH ROW;
 
-        -- Increase reads count 
-        UPDATE books 
-            SET reads=reads+1 
-            WHERE title=loan_title AND author=loan_author;
+        AFTER EACH ROW IS
+        BEGIN
+            IF DELETING THEN
+                -- Obtain loan's book title and author
+                SELECT e.title, e.author INTO loan_title, loan_author FROM editions e
+                    JOIN copies c ON e.isbn=c.isbn
+                    WHERE c.signature=:OLD.signature;
+
+                -- Increase reads count 
+                UPDATE books 
+                    SET reads=reads-1 
+                    WHERE title=loan_title AND author=loan_author;
+
+                RETURN; -- Skip processing if the previous type was 'L'
+            ELSIF UPDATING THEN
+                IF :OLD.TYPE = 'L' THEN
+                    RETURN; -- Skip processing if the previous type was 'L'
+                END IF;
+            ELSE
+                -- Obtain loan's book title and author
+                SELECT e.title, e.author INTO loan_title, loan_author FROM editions e
+                    JOIN copies c ON e.isbn=c.isbn
+                    WHERE c.signature=:NEW.signature;
+
+                -- Increase reads count 
+                UPDATE books 
+                    SET reads=reads+1 
+                    WHERE title=loan_title AND author=loan_author;
+            END IF;
+        END AFTER EACH ROW;
     END;
 
     -- -- TESTS

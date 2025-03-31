@@ -40,7 +40,7 @@ CREATE OR REPLACE PACKAGE BODY foundicu AS
         END;
         */
         -- go through users and check by primary key if there is such user as current
-        SELECT BAN_UP2 INTO ban_date, COUNT (*) INTO count_users FROM USERS
+        SELECT BAN_UP2, COUNT(*) INTO ban_date, count_users FROM USERS
             WHERE USER_ID = current_user;
         IF count_users = 0 THEN
             -- if nUot, raise error
@@ -195,7 +195,7 @@ CREATE OR REPLACE PACKAGE BODY foundicu AS
         no_loan_found EXCEPTION;
         multiple_loans_found EXCEPTION;
     BEGIN   
-        -- CHECK IF THE BOOK IS BEING LOANED BY CURRENT USER#
+        -- CHECK IF THE BOOK IS BEING LOANED BY CURRENT USER
         SELECT COUNT(1) INTO loan_count FROM loans l
             WHERE l.signature = copy_signature 
                 AND l.user_id = current_user

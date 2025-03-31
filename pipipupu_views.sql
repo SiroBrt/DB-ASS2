@@ -62,14 +62,49 @@
     WHERE l.user_id = foundicu.get_current_user() AND l.type = 'R'
     WITH CHECK OPTION;
 
-    -- CREATE OR REPLACE TRIGGER my_reservations_trigger
-    -- BEFORE INSERT OR UPDATE OF TIME ON my_reservations
-    -- FOR EACH ROW
-    -- BEGIN
-    --     IF :NEW.TIME < 0 OR :NEW.TIME > 30 THEN
-    --         RAISE_APPLICATION_ERROR(-20001, 'Time must be between 0 and 30 days');
-    --     END IF;
-    -- END;
+    CREATE OR REPLACE TRIGGER my_reservations_trigger
+        BEFORE INSERT OR UPDATE OF STOPDATE ON my_reservations
+        FOR EACH ROW
+    DECLARE
+        copy_signature copies.signature%TYPE;
+        loan_service services%ROWTYPE;
+    BEGIN   
+        -- IF INSERTING THEN
+        --     -- WE NEED YOUR CODE IVAN!!!!!!!!!!!!!!
+        -- ELS
+        IF NOT UPDATING THEN
+            RETURN;
+        END IF;
+
+        IF :NEW.STOPDATE < SYSDATE THEN
+            RAISE_APPLICATION_ERROR(-20001, 'STOPDATE cannot be in the past!');
+        END IF;
+
+        -- SELECT isbn INTO book_isbn FROM copies c
+        --     WHERE c.signature = :NEW.SIGNATURE;
+        
+        -- SELECT min(signature) INTO copy_signature FROM copies c
+        --     WHERE c.isbn = book_isbn
+        --     AND c.signature NOT IN (
+        --         SELECT signature 
+        --             FROM loans l 
+        --             JOIN copies c ON c.isbn = book_isbn
+        --             WHERE l.stopdate-14 <= :NEW.STOPDATE
+        --                 AND l.return+14 >= :NEW.STOPDATE
+        --     );
+
+        -- -- update service or insert new one xdddd
+        -- BEGIN
+        --     SELECT * INTO loan_service FROM services 
+        --         WHERE town=:NEW.town AND province=:NEW.province AND taskdate=:NEW.stopdate;
+        -- EXCEPTION
+        --     WHEN NO_DATA_FOUND THEN
+        --         BEGIN
+        --             INSERT INTO services (town, province, taskdate) 
+        --                 VALUES (:NEW.town, :NEW.province, :NEW.stopdate);  
+        --         END;
+        -- END;
+    END copy_deregistration;
 
     -- TESTS
     SELECT * FROM my_reservations;

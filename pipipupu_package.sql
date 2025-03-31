@@ -40,7 +40,7 @@ CREATE OR REPLACE PACKAGE BODY foundicu AS
         END;
         */
         -- go through users and check by primary key if there is such user as current
-        SELECT BAN_UP2 INTO ban_date, COUNT (*) INTO count_users FROM USERS
+        SELECT BAN_UP2, COUNT (*) INTO ban_date, count_users FROM USERS
             WHERE USER_ID = current_user;
         IF count_users = 0 THEN
             -- if nUot, raise error
@@ -50,7 +50,8 @@ CREATE OR REPLACE PACKAGE BODY foundicu AS
             dbms_output.put_line('Current user exists');
         END IF;
 
-        -- CHECK IS THERE IS AN EXISTING RESERVATION FOR THE BOOK
+        -- check reservations and if there is a reservation for the current user
+        -- if there is a reservation, update the loan type to 'L'
         SELECT COUNT(*) INTO count_reservations FROM LOANS
             WHERE USER_ID = current_user
             AND SIGNATURE = copy_signature
@@ -88,7 +89,7 @@ CREATE OR REPLACE PACKAGE BODY foundicu AS
                         VALUES (copy_signature, current_user, SYSDATE, 
                         (SELECT TOWN FROM USERS WHERE USER_ID = current_user), 
                         (SELECT PROVINCE FROM USERS WHERE USER_ID = current_user), 
-                        'L', SYSDATE, SYSDATE + 14); -- to have return date two weeks from now
+                        'L', DEFAULT, SYSDATE + 14); -- to have return date two weeks from now
                     dbms_output.put_line('New loan inserted');
                 ELSE
                     -- if the user has reached the upper limit for loans, raise error
@@ -109,11 +110,15 @@ CREATE OR REPLACE PACKAGE BODY foundicu AS
     END insert_loan;
 
     -- beautifu
+    -- Insert Reservation Procedure: 
     PROCEDURE insert_reservation(isbn IN editions.isbn%TYPE, reservation_date in DATE) IS
+        -- receives an ISBN and a date; 
         copy_signature copies.signature%TYPE;
         user_data users%ROWTYPE;
+
         stop_time stops.time%TYPE;
         loan_count NUMBER;
+    /*
         existing_service NUMBER;
         user_is_banned EXCEPTION;
         no_available_copies EXCEPTION;
@@ -188,7 +193,56 @@ CREATE OR REPLACE PACKAGE BODY foundicu AS
         WHEN no_available_copies
             THEN dbms_output.put_line('Abort. No available copies for loaning.');
     END insert_reservation;
+    */
+    BEGIN
+        BEGIN
+        -- checks that the current USER exists 
+            SELECT * INTO user_data FROM users WHERE users.user_id = current_user;
+        EXCEPTION
+            WHEN NO_DATA_FOUND
+                THEN dbms_output.put_line('Error. Current user does not exist.');
+            WHEN TOO_MANY_ROWS
+                THEN dbms_output.put_line('Error. Multiple current users found with the same primary key.');
+        END;
+        -- and has quota for reserving (has not reached the upper borrowing limit
+        SELECT COUNT(*) INTO count_reservations FROM LOANS l
+            WHERE l.user_id = current_user
+                AND l.return > SYSDATE
+                AND l.type = 'L';
+        IF count_reservations > 2
+            THEN dbms_output.put_line('Error. Current user has reached the upper limit for loans');
+            RETURN;
+        END IF;
 
+        -- and they are not sanctioned); 
+        IF SYSDATE < user_data.ban_up2
+            THEN dbms_output.put_line('Error. Current user is banned.');
+            RETURN;
+        END IF;
+
+        -- checks the availability of a copy of that edition for two weeks (14 days) from the date provided, 
+        SELECT min(SIGNATURE) INTO copy_signature FROM COPIES c
+            WHERE c.isbn = isbn -- find all copies of the book
+            AND c.signature NOT IN ( -- exclude the copies that are not available; could be done by LEFT JOIN
+                SELECT SIGNATURE 
+                    FROM LOANS l 
+                    JOIN COPIES c ON c.isbn = isbn
+                    WHERE l.stopdate-14 <= reservation_date
+                        AND l.return+14 >= reservation_date
+            );
+        IF copy_signature IS NULL
+            THEN dbms_output.put_line('Error. No available copies for loaning.');
+            RETURN;
+        END IF;
+        -- and then places the hold (else, reports the hinder). 
+        
+        INSERT INTO LOANS (SIGNATURE, USER_ID, STOPDATE, TOWN, PROVINCE, TYPE, TIME, RETURN) 
+            VALUES (copy_signature, current_user, reservation_date, user_data.town, user_data.province, 'R', DEFAULT, reservation_date + 14); -- to have return date two weeks from reservation
+        
+
+    END insert_reservation;
+
+    
     -- IT SHOULD BE OK
     PROCEDURE record_books_returning(copy_signature IN loans.signature%TYPE) IS
         loan_count NUMBER;

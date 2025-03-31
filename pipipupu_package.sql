@@ -249,7 +249,7 @@ CREATE OR REPLACE PACKAGE BODY foundicu AS
         no_loan_found EXCEPTION;
         multiple_loans_found EXCEPTION;
     BEGIN   
-        -- CHECK IF THE BOOK IS BEING LOANED BY CURRENT USER#
+        -- CHECK IF THE BOOK IS BEING LOANED BY CURRENT USER
         SELECT COUNT(1) INTO loan_count FROM loans l
             WHERE l.signature = copy_signature 
                 AND l.user_id = current_user

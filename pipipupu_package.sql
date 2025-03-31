@@ -237,15 +237,16 @@ CREATE OR REPLACE PACKAGE BODY foundicu AS
         END IF;
         -- and then places the hold (else, reports the hinder). 
         
-        SELECT min(TASKDATE), COUNT(*) INTO date_of_service, count_reservations FROM SERVICES
+        SELECT COUNT(*) INTO count_reservations FROM SERVICES
             JOIN STOPS ON SERVICES.town = stops.town AND SERVICES.province = stops.province
             WHERE TOWN = user_data.town
                 AND PROVINCE = user_data.province
-                AND TASKDATE > reservation_date; 
+                AND TASKDATE = reservation_date; 
         IF count_reservations = 0 
             THEN dbms_output.put_line('Error. No service available for the following dates.');
             RETURN;
         END IF;
+        -- if found, it is only one as TOWN, PROVINCE AND TASKDATE are the primary key that is unique
         INSERT INTO LOANS (SIGNATURE, USER_ID, STOPDATE, TOWN, PROVINCE, TYPE, TIME, RETURN) 
             VALUES (copy_signature, current_user, date_of_service, user_data.town, user_data.province, 'R', DEFAULT, date_of_service + 14); -- to have return date two weeks from reservation
         

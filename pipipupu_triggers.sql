@@ -1,6 +1,33 @@
 -- ---------------------- TRIGGERS ---------------------
 -- ----------------------------------------------------
 
+---- TASK 1.4.A
+    CREATE OR REPLACE TRIGGER restrict_library_posts
+        BEFORE INSERT OR UPDATE OF USER_ID ON posts
+    DECLARE
+        user_type users.type%TYPE;
+    BEGIN
+        IF UPDATING THEN
+            SELECT type INTO user_type FROM users 
+                WHERE user_id=:OLD.user_id;
+            IF user_type='L' THEN 
+                RAISE_APPLICATION_ERROR(-20001, 'Error. Libraries cannot write posts');
+                RETURN;
+            END IF;
+        ELSIF INSERTING THEN
+            SELECT type INTO user_type FROM users 
+                WHERE user_id=:NEW.user_id;
+            IF user_type='L' THEN 
+                RAISE_APPLICATION_ERROR(-20001, 'Error. Libraries cannot write posts');
+                RETURN;
+            END IF;
+        END IF;
+    EXCEPTION
+        WHEN NO_DATA_FOUND 
+            THEN dbms_output.put_line('Data Integrity Error. User not found'); 
+    END copy_deregistration;
+
+
 ---- TASK 1.4.B
     -- Prevents changing status of 'D' copies
     -- Updates deregistration date when copy is deregistered

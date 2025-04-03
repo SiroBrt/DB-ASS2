@@ -1,6 +1,13 @@
 SET LINESIZE 1000;
 SET WRAP OFF;
 
+-- 1.1.2
+-- Frutos campo dorado driver in 2020
+insert into assign_drv values('ESP>>101010101111', '1-NOV-20', 'AN-02');
+insert into assign_bus values('BUS-029', '1-NOV-20', 'AN-02');
+insert into services values('Villaverde', 'Madrid', 'BUS-029', '1-NOV-20', 'ESP>>101010101111');
+
+
 -- 1.2.1 tests
 begin
   foundicu.set_current_user(1546522482);

@@ -88,7 +88,7 @@
         END LOOP;
     END;
 
-    ---- Create trigger that updates read counter upon new loan insertion, update or deletion.
+    --- Create trigger that updates read counter upon new loan insertion, update or deletion.
     CREATE OR REPLACE TRIGGER update_book_read
         FOR INSERT OR UPDATE OF type OR DELETE ON loans
     COMPOUND TRIGGER
@@ -99,7 +99,7 @@
         BEGIN
             IF UPDATING THEN
                 IF :NEW.type = 'R' AND :OLD.type = 'L' THEN
-                    RAISE_APPLICATION_ERROR(-20001, 'Cannot change froma loan to a reservation!');
+                    RAISE_APPLICATION_ERROR(-20001, 'Cannot change from a loan to a reservation!');
                 END IF;
             END IF;
         END BEFORE EACH ROW;

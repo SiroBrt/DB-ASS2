@@ -25,7 +25,7 @@
     EXCEPTION
         WHEN NO_DATA_FOUND 
             THEN dbms_output.put_line('Data Integrity Error. User not found'); 
-    END copy_deregistration;
+    END restrict_library_posts;
 
 
 ---- TASK 1.4.B

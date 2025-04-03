@@ -44,12 +44,16 @@
 
     -- Allow update post attribute
     -- Disallow insertion and deletion
-    CREATE OR REPLACE TRIGGER my_reservations_trigger
+    CREATE OR REPLACE TRIGGER my_loans_trigger
         INSTEAD OF UPDATE OF text ON my_reservations
     DECLARE
         current_user_id users.user_id%TYPE;
     BEGIN
         current_user_id := foundicu.get_current_user()
+
+        -- SOME MORE CODE HERE TO ENSURE INSERTION
+
+
         INSERT INTO loans
             VALUES (:NEW.signature, current_user_id, :NEW.stopdate, :NEW.town, :NEW.province :NEW.type, :NEW.time, :NEW.return);
         INSERT INTO posts

@@ -130,6 +130,3 @@
             END IF;
         END AFTER EACH ROW;
     END;
-
-
-SELECT constraint_name FROM all_constraints WHERE table_name='ck_type' AND constraint_type in ('C');

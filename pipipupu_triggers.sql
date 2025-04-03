@@ -2,8 +2,18 @@
 -- ----------------------------------------------------
 
 ---- TASK 1.4.A
+    -- Delete posts from libraries
+    DELETE FROM POSTS
+        WHERE USER_ID IN (
+            SELECT DISTINCT USER_ID 
+                FROM USERS 
+                WHERE type='L'
+        );
+     
+    -- Trigger for restricting library posts
     CREATE OR REPLACE TRIGGER restrict_library_posts
         BEFORE INSERT OR UPDATE OF USER_ID ON posts
+        FOR EACH ROW
     DECLARE
         user_type users.type%TYPE;
     BEGIN
@@ -57,7 +67,7 @@
 
 ---- TASK 1.4.D
     -- Add new constraint to loans to avoid exploits
-    ALTER TABLE loans ADD CONSTRAINT ck_type CHECK (condition in ('L', 'R') )
+    ALTER TABLE loans ADD CONSTRAINT ck_type CHECK (type in ('L', 'R'));
 
     -- Create new column 'reads' in table 'books'
     ALTER TABLE books ADD reads INTEGER DEFAULT 0;
@@ -79,7 +89,7 @@
 
     ---- Create trigger that updates read counter upon new loan insertion, update or deletion.
     CREATE OR REPLACE TRIGGER update_book_read
-        FOR INSERT OR UPDATE OF types OR DELETE ON employees
+        FOR INSERT OR UPDATE OF type OR DELETE ON loans
     COMPOUND TRIGGER
         loan_title editions.title%TYPE;
         loan_author editions.author%TYPE;
@@ -106,12 +116,7 @@
                     SET reads=reads-1 
                     WHERE title=loan_title AND author=loan_author;
 
-                RETURN; -- Skip processing if the previous type was 'L'
-            ELSIF UPDATING THEN
-                IF :OLD.TYPE = 'L' THEN
-                    RETURN; -- Skip processing if the previous type was 'L'
-                END IF;
-            ELSE
+            ELSIF (UPDATING AND :OLD.TYPE <> 'L') OR INSERTING THEN
                 -- Obtain loan's book title and author
                 SELECT e.title, e.author INTO loan_title, loan_author FROM editions e
                     JOIN copies c ON e.isbn=c.isbn
@@ -124,3 +129,6 @@
             END IF;
         END AFTER EACH ROW;
     END;
+
+
+SELECT constraint_name FROM all_constraints WHERE table_name='ck_type' AND constraint_type in ('C');

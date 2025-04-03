@@ -3,16 +3,15 @@
 
 -- PACKAGE HEADER
 CREATE OR REPLACE PACKAGE foundicu AS 
-    -- TYPE my_type IS RECORD (...);
     current_user CHAR(10);
+    PROCEDURE set_current_user(new_user IN current_user%TYPE);
+    FUNCTION get_current_user RETURN current_user%TYPE;
+
     PROCEDURE insert_loan(copy_signature IN loans.signature%TYPE);
     PROCEDURE insert_reservation(isbn IN editions.isbn%TYPE, reservation_date in date);
     PROCEDURE record_books_returning(copy_signature IN loans.signature%TYPE);
     
     -- FUNCTION insert_service(town IN services.town%TYPE, province IN services.province%TYPE, taskdate IN services.taskdate%TYPE) RETURN NUMBER;
-
-    PROCEDURE set_current_user(new_user IN current_user%TYPE);
-    FUNCTION get_current_user RETURN current_user%TYPE;
 END foundicu;
 
 -- PACKAGE BODY

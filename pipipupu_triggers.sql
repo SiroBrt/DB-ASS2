@@ -51,18 +51,19 @@
                     RAISE_APPLICATION_ERROR(-20001, 'Cannot change copy condition from deregistered to another value (they are already physically destroyed)!');
                 END IF;
             END IF;
-        END BEFORE EACH ROW;
 
-        -- Update deregistration date
-        AFTER EACH ROW IS
-        BEGIN
-            IF :NEW.DEREGISTERED='D' THEN
-                UPDATE copies
-                    SET DEREGISTERED = SYSDATE
-                    WHERE SIGNATURE = :NEW.SIGNATURE;
+            IF :NEW.CONDITION='D' THEN
+                :NEW.DEREGISTERED := SYSDATE;
             END IF;
-        END AFTER EACH ROW;
+        END BEFORE EACH ROW;
     END copy_deregistration;
+
+    SELECT * FROM copies WHERE condition='D';
+    SELECT loans.signature, condition FROM loans 
+        LEFT JOIN copies
+        ON loans.signature=copies.signature
+        WHERE ROWNUM=1;
+
 
 
 ---- TASK 1.4.D

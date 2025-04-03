@@ -36,13 +36,19 @@ end;
 
 
 -- 1.3.1 TESTS
-INSERT INTO my_data VALUES('1', '1111', NULL, SYSDATE, '', '', '', NULL, 1111111111111, 'P', NULL);
+  -- CANNOT INSERT THIS: READ ONLY
+  INSERT INTO my_data VALUES('1', '1111', NULL, SYSDATE, '', '', '', NULL, 1111111111111, 'P', NULL);
 
 -- 1.4.A TESTS
   -- INSERT LIBRARY POST
   INSERT INTO posts VALUES('AA957', '9994309856', TO_DATE('19-11-2024','DD-MM-YYYY'), SYSDATE, 'text', 0, 0);
   -- INSERT USER POST
   INSERT INTO POSTS VALUES('JG545', '9266310304', TO_DATE('22-11-2024','DD-MM-YYYY'), SYSDATE, 'text', 1, 1);
+
+-- 1.4.B TESTS
+  UPDATE copies SET condition='D' WHERE copies.signature='AA070';
+  SELECT DEREGISTERED FROM COPIES WHERE copies.signature='AA070';
+  UPDATE copies SET condition='N' WHERE copies.signature='AA070';
 
 -- 1.4.D TESTS
 -- SELECT title, author, reads FROM books

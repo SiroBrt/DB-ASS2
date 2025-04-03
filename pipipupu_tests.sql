@@ -2,10 +2,14 @@ SET LINESIZE 1000;
 SET WRAP OFF;
 
 -- 1.1.2
--- Frutos campo dorado driver in 2020
-insert into assign_drv values('ESP>>101010101111', '1-NOV-20', 'AN-02');
+-- Custom driver with things
+insert into drivers values('123', '123@hotmail.com', 'Sujeto de la Prueba Estandar', '29-FEB-00', 123456789, 'Casa 1 a la derecha', '01-MAR-00','02-MAR-24');
+insert into assign_drv values('123', '1-NOV-20', 'AN-02');
 insert into assign_bus values('BUS-029', '1-NOV-20', 'AN-02');
-insert into services values('Villaverde', 'Madrid', 'BUS-029', '1-NOV-20', 'ESP>>101010101111');
+insert into services values('Villaverde', 'Madrid', 'BUS-029', '1-NOV-20', '123');
+insert into loans values('CH068', 1546522482, '1-NOV-20', 'Villaverde', 'Madrid', 'L', 100, NULL);
+insert into loans values('YB164', 1546522482, '1-NOV-20', 'Villaverde', 'Madrid', 'L', 100, SYSDATE+365);
+
 
 
 -- 1.2.1 tests

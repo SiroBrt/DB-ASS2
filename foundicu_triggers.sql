@@ -2,7 +2,7 @@
 -- ----------------------------------------------------
 
 ---- TASK 1.4.A
-    -- Delete posts from libraries
+    -- Delete posts from libraries: 4867 rows
     DELETE FROM POSTS
         WHERE USER_ID IN (
             SELECT DISTINCT USER_ID 
@@ -21,14 +21,14 @@
             SELECT type INTO user_type FROM users 
                 WHERE user_id=:OLD.user_id;
             IF user_type='L' THEN 
-                RAISE_APPLICATION_ERROR(-20001, 'Error. Libraries cannot write posts');
+                RAISE_APPLICATION_ERROR(-20051, 'Error. Library with id '|| :NEW.user_id ||' cannot write posts');
                 RETURN;
             END IF;
         ELSIF INSERTING THEN
             SELECT type INTO user_type FROM users 
                 WHERE user_id=:NEW.user_id;
             IF user_type='L' THEN 
-                RAISE_APPLICATION_ERROR(-20001, 'Error. Libraries cannot write posts');
+                RAISE_APPLICATION_ERROR(-20051, 'Error. Library with id '|| :NEW.user_id ||' cannot write posts');
                 RETURN;
             END IF;
         END IF;
@@ -48,7 +48,7 @@
         BEGIN 
             IF UPDATING THEN
                 IF :OLD.CONDITION='D' AND :NEW.CONDITION<>'D' THEN
-                    RAISE_APPLICATION_ERROR(-20001, 'Cannot change copy condition from deregistered to another value (they are already physically destroyed)!');
+                    RAISE_APPLICATION_ERROR(-20052, 'Cannot change copy condition from deregistered to another value (they are already physically destroyed)!');
                 END IF;
             END IF;
 
@@ -57,13 +57,6 @@
             END IF;
         END BEFORE EACH ROW;
     END copy_deregistration;
-
-    SELECT * FROM copies WHERE condition='D';
-    SELECT loans.signature, condition FROM loans 
-        LEFT JOIN copies
-        ON loans.signature=copies.signature
-        WHERE ROWNUM=1;
-
 
 
 ---- TASK 1.4.D
@@ -99,7 +92,7 @@
         BEGIN
             IF UPDATING THEN
                 IF :NEW.type = 'R' AND :OLD.type = 'L' THEN
-                    RAISE_APPLICATION_ERROR(-20001, 'Cannot change from a loan to a reservation!');
+                    RAISE_APPLICATION_ERROR(-20053, 'Cannot change from a loan to a reservation!');
                 END IF;
             END IF;
         END BEFORE EACH ROW;

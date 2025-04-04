@@ -60,6 +60,14 @@
     END my_loans_trigger;
     /
 
+    CREATE OR REPLACE TRIGGER block_delete_my_loans
+        INSTEAD OF DELETE ON my_loans
+        FOR EACH ROW
+    BEGIN
+        RAISE_APPLICATION_ERROR(-20032, 'Deletion is not allowed on my_loans view.');
+    END;
+    /
+
     -- -- TESTS
     -- SELECT USER_ID FROM posts WHERE TEXT IS NOT NULL AND ROWNUM=1;
     -- EXEC foundicu.set_current_user(9994309824);

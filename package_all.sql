@@ -40,6 +40,8 @@ CREATE OR REPLACE PACKAGE BODY foundicu AS
             dbms_output.put_line('Current user exists');
         END IF;
 
+        IF SYSDATE < ban_date -- even if user has reservation, we do not allow to make them loans 
+            THEN RAISE user_is_banned;
         -- check reservations and if there is a reservation for the current user
         -- if there is a reservation, update the loan type to 'L'
         SELECT COUNT(*) INTO count_reservations FROM LOANS

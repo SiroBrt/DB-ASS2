@@ -47,6 +47,8 @@ insert into loans values('NG473', 1546522482, '01-MAR-00', 'Villaverde', 'Madrid
 
 
 -- 1.3.1 TESTS
+  EXEC foundicu.set_current_user(9994309824);
+  SELECT * FROM my_data;
   -- CANNOT INSERT THIS: READ ONLY
   INSERT INTO my_data VALUES('1', '1111', NULL, SYSDATE, '', '', '', NULL, 1111111111111, 'P', NULL);
 

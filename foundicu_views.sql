@@ -19,10 +19,6 @@
     WHERE u.user_id = foundicu.get_current_user()
     WITH READ ONLY;
 
-    -- -- TESTS
-    -- EXEC foundicu.set_current_user(9994309824);
-    -- SELECT * FROM my_data;
-
 ---- TASK 1.3.2
     CREATE OR REPLACE VIEW my_loans AS
     SELECT 

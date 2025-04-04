@@ -162,11 +162,13 @@ CREATE OR REPLACE PACKAGE BODY foundicu AS
         SELECT min(c.signature) INTO copy_signature FROM COPIES c
             WHERE c.isbn = v_isbn -- find all copies of the book
             AND c.signature NOT IN ( -- exclude the copies that are not available; could be done by LEFT JOIN
-                SELECT l.signature 
-                    FROM LOANS l 
-                    JOIN COPIES c ON c.isbn = v_isbn
-                    WHERE l.stopdate-14 <= reservation_date
-                        AND l.return+14 >= reservation_date
+                SELECT l.signature
+                FROM LOANS l
+                WHERE l.signature IN (
+                    SELECT signature FROM COPIES WHERE isbn = v_isbn
+                )
+                AND l.stopdate - 14 <= reservation_date
+                AND l.return + 14 >= reservation_date
             );
         IF copy_signature IS NULL
             THEN dbms_output.put_line('Error. No available copies for loaning.');

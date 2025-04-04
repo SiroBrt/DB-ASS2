@@ -2,6 +2,15 @@ SET LINESIZE 1000;
 SET WRAP OFF;
 
 -- 1.1.1
+  -- Originally, there are 60 books that satisfy the conditions, one of them is:
+    -- title: Pablo Picasso
+    -- author: Picasso, Pablo, ( 1881-1973)
+  -- We'll introduce a loan of this book and check the behaviour of the query
+    -- one copy of Picasso has signature: IG254
+  insert into loans values('IG254', 1546522482, '16-NOV-24', 'Villatrigos', 'Valencia', 'L', 100, NULL);
+  -- run the query again and you'll see that there are 59 rows
+  delete loans where signature='IG254' and user_id='1546522482' and stopdate='16-NOV-24';
+
 -- 1.1.2
   -- Custom driver with things
   insert into drivers values('123', '123@hotmail.com', 'Sujeto de la Prueba Estandar', '29-FEB-00', 123456789, 'Casa 1 a la derecha', '01-MAR-00','02-MAR-24');

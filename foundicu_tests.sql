@@ -52,6 +52,21 @@ insert into loans values('NG473', 1546522482, '01-MAR-00', 'Villaverde', 'Madrid
   -- CANNOT INSERT THIS: READ ONLY
   INSERT INTO my_data VALUES('1', '1111', NULL, SYSDATE, '', '', '', NULL, 1111111111111, 'P', NULL);
 
+-- 1.3.2 TESTS
+  EXEC foundicu.set_current_user(5005122262);
+  UPDATE my_loans
+      SET TEXT = 'THIS IS TEST'
+      WHERE SIGNATURE='UC856'; 
+  SELECT * FROM my_loans;
+  SELECT * FROM POSTS WHERE USER_ID = 5005122262;
+
+  -- to test case of insertion
+  EXEC foundicu.set_current_user(8612169569);
+  UPDATE my_loans
+      SET TEXT = 'HIHIHI'
+      WHERE SIGNATURE = 'JL729';
+  SELECT SIGNATURE, TEXT FROM POSTS WHERE USER_ID = 8612169569;
+
 -- 1.3.3 TESTS
   BEGIN
     FOUNDICU.SET_CURRENT_USER(1546522482);

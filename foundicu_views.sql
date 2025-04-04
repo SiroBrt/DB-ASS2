@@ -34,27 +34,31 @@
         p.likes,
         p.dislikes
     FROM loans l
-    LEFT JOIN posts p ON l.signature = p.signature
-    WHERE l.user_id = foundicu.get_current_user() AND l.type = 'L'
+    LEFT JOIN posts p ON l.signature = p.signature AND l.user_id = p.user_id AND l.stopdate = p.stopdate
+    WHERE l.user_id = foundicu.get_current_user() AND l.type = 'L' AND l.return < SYSDATE
     WITH CHECK OPTION;
 
     -- Allow update post attribute
     -- Disallow insertion and deletion
     CREATE OR REPLACE TRIGGER my_loans_trigger
-        INSTEAD OF UPDATE OF text ON my_reservations
-    DECLARE
-        current_user_id users.user_id%TYPE;
+        INSTEAD OF INSERT OR UPDATE
+        ON my_loans
+        FOR EACH ROW
     BEGIN
-        current_user_id := foundicu.get_current_user()
-
-        -- SOME MORE CODE HERE TO ENSURE INSERTION
-
-
-        INSERT INTO loans
-            VALUES (:NEW.signature, current_user_id, :NEW.stopdate, :NEW.town, :NEW.province :NEW.type, :NEW.time, :NEW.return);
-        INSERT INTO posts
-            VALUES (:NEW.signature, current_user_id, :NEW.stopdate, :NEW.post_date, :NEW.text :NEW.likes, :NEW.dislikes);
-    END my_reservations_trigger;
+        IF :OLD.text IS NULL THEN
+            -- IF INSERTING THEN
+            INSERT INTO POSTS (SIGNATURE, USER_ID, STOPDATE, TEXT, POST_DATE, LIKES, DISLIKES)
+                VALUES (:NEW.SIGNATURE, foundicu.get_current_user(), :NEW.STOPDATE, :NEW.TEXT, SYSDATE, 0, 0);
+        ELSE
+            -- IF UPDATING THEN
+            UPDATE POSTS
+                SET POST_DATE = SYSDATE,
+                    TEXT = :NEW.text
+                WHERE SIGNATURE = :NEW.SIGNATURE
+                    AND USER_ID = foundicu.get_current_user();
+        END IF;
+    END my_loans_trigger;
+    /
 
     -- -- TESTS
     -- SELECT USER_ID FROM posts WHERE TEXT IS NOT NULL AND ROWNUM=1;

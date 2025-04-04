@@ -112,7 +112,7 @@
                     SET reads=reads-1 
                     WHERE title=loan_title AND author=loan_author;
 
-            ELSIF (UPDATING AND :OLD.TYPE <> 'L') OR INSERTING THEN
+            ELSIF (UPDATING AND :OLD.TYPE <> 'L') OR (INSERTING AND :NEW.TYPE = 'L') THEN
                 -- Obtain loan's book title and author
                 SELECT e.title, e.author INTO loan_title, loan_author FROM editions e
                     JOIN copies c ON e.isbn=c.isbn

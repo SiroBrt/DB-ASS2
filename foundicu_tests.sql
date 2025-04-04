@@ -189,4 +189,11 @@ SET WRAP OFF;
   UPDATE copies SET condition='N' WHERE copies.signature='AA070'; -- ERROR
 
 -- 1.4.D TESTS
-  -- NO TESTS YET
+  -- 0 reads
+  SELECT READS FROM BOOKS WHERE title='Pablo Picasso' AND author='Picasso, Pablo, ( 1881-1973)';
+  insert into loans values('IG254', 1546522482, '16-NOV-24', 'Villatrigos', 'Valencia', 'L', 100, NULL);
+  -- 1 reads
+  SELECT READS FROM BOOKS WHERE title='Pablo Picasso' AND author='Picasso, Pablo, ( 1881-1973)';
+  delete loans where signature='IG254' and user_id='1546522482' and stopdate='16-NOV-24';
+  -- 0 reads
+  SELECT READS FROM BOOKS WHERE title='Pablo Picasso' AND author='Picasso, Pablo, ( 1881-1973)';

@@ -50,6 +50,8 @@ insert into loans values('NG473', 1546522482, '01-MAR-00', 'Villaverde', 'Madrid
   -- CANNOT INSERT THIS: READ ONLY
   INSERT INTO my_data VALUES('1', '1111', NULL, SYSDATE, '', '', '', NULL, 1111111111111, 'P', NULL);
 
+-- 1.3.3 TESTS
+
 -- 1.4.A TESTS
   -- INSERT LIBRARY POST: ERROR
   INSERT INTO posts VALUES('AA957', '9994309856', TO_DATE('19-11-2024','DD-MM-YYYY'), SYSDATE, 'text', 0, 0);

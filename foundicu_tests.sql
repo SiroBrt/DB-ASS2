@@ -59,6 +59,7 @@ insert into loans values('NG473', 1546522482, '01-MAR-00', 'Villaverde', 'Madrid
   /
   INSERT INTO my_reservations VALUES('NE000', '16-NOV-24', 'Sotolemures', 'Barcelona', 'R', 750, NULL);
   SELECT * FROM my_reservations;
+  SELECT * FROM loans WHERE user_id=foundicu.get_current_user() AND type='R';
   UPDATE my_reservations SET signature='IJ548' WHERE signature='NE000';     
   UPDATE my_reservations SET TIME=2000 WHERE signature='NE000';
   DELETE FROM my_reservations WHERE SIGNATURE='NE000' AND STOPDATE='16-NOV-24';

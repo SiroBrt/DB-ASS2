@@ -111,17 +111,30 @@
                 UPDATE books 
                     SET reads=reads-1 
                     WHERE title=loan_title AND author=loan_author;
+            ELSIF UPDATING THEN
+                IF :OLD.TYPE != 'L' AND :NEW.TYPE='L' THEN
+                    -- Obtain loan's book title and author
+                    SELECT e.title, e.author INTO loan_title, loan_author FROM editions e
+                        JOIN copies c ON e.isbn=c.isbn
+                        WHERE c.signature=:NEW.signature;
 
-            ELSIF (UPDATING AND :OLD.TYPE <> 'L') OR (INSERTING AND :NEW.TYPE = 'L') THEN
-                -- Obtain loan's book title and author
-                SELECT e.title, e.author INTO loan_title, loan_author FROM editions e
-                    JOIN copies c ON e.isbn=c.isbn
-                    WHERE c.signature=:NEW.signature;
+                    -- Increase reads count 
+                    UPDATE books 
+                        SET reads=reads+1 
+                        WHERE title=loan_title AND author=loan_author;
+                    END IF;
+            ELSIF INSERTING THEN
+                IF :NEW.TYPE = 'L' THEN
+                    -- Obtain loan's book title and author
+                    SELECT e.title, e.author INTO loan_title, loan_author FROM editions e
+                        JOIN copies c ON e.isbn=c.isbn
+                        WHERE c.signature=:NEW.signature;
 
-                -- Increase reads count 
-                UPDATE books 
-                    SET reads=reads+1 
-                    WHERE title=loan_title AND author=loan_author;
+                    -- Increase reads count 
+                    UPDATE books 
+                        SET reads=reads+1 
+                        WHERE title=loan_title AND author=loan_author;
+                END IF;
             END IF;
         END AFTER EACH ROW;
     END;

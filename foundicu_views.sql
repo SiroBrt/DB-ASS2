@@ -65,9 +65,9 @@
         FOR EACH ROW
     BEGIN
         IF INSERTING THEN
-            RAISE_APPLICATION_ERROR(-20032, 'Insertion is not allowed on my_loans view.');
+            RAISE_APPLICATION_ERROR(-20042, 'Insertion is not allowed on my_loans view.');
         ELSIF DELETING THEN
-            RAISE_APPLICATION_ERROR(-20032, 'Deletion is not allowed on my_loans view.');
+            RAISE_APPLICATION_ERROR(-20042, 'Deletion is not allowed on my_loans view.');
         END IF;
     END guard_my_loans;
     /

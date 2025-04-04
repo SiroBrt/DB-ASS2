@@ -33,23 +33,19 @@ CREATE OR REPLACE PACKAGE BODY foundicu AS
         v_town USERS.TOWN%TYPE;
         v_province USERS.PROVINCE%TYPE;
         v_population MUNICIPALITIES.POPULATION%TYPE;
-
-        user_is_banned EXCEPTION;
-        copy_not_available EXCEPTION;
     BEGIN
         -- go through users and check by primary key if there is such user as current
         SELECT MAX(BAN_UP2), COUNT (*) INTO ban_date, count_users FROM USERS
             WHERE USER_ID = current_user;
-        IF count_users = 0 THEN
-            -- if nUot, raise error
-            dbms_output.put_line('Error. Current user does not exist');
-            RETURN;
+        IF count_users = 0 
+            THEN RAISE_APPLICATION_ERROR(-20001, 'Current user ('||current_user||') doesnt exist');
         ELSE
             dbms_output.put_line('Current user exists');
         END IF;
 
         IF SYSDATE < ban_date -- even if user has reservation, we do not allow to make them loans 
-            THEN RAISE user_is_banned;
+            THEN RAISE_APPLICATION_ERROR(-20002, 'Current user ('||current_user||') is banned up to '||ban_date);
+        END IF;
         -- check reservations and if there is a reservation for the current user
         -- if there is a reservation, update the loan type to 'L'
         SELECT COUNT(*) INTO count_reservations FROM LOANS
@@ -64,10 +60,6 @@ CREATE OR REPLACE PACKAGE BODY foundicu AS
                 WHERE USER_ID = current_user
                 AND SIGNATURE = copy_signature;
             dbms_output.put_line('Loan updated from reservation to loan');
-        
-        -- if the user has not reached the upper limit for loans, check if the user is not sanctioned
-        ELSIF SYSDATE < ban_date
-            THEN RAISE user_is_banned;
         ELSE
             -- to insert new loan, we need to insert a new route and assign drv
             -- INSERT INTO LOANS VALUES(signature, user_id, SYSDATE, town, province, type, time, return);
@@ -120,11 +112,7 @@ CREATE OR REPLACE PACKAGE BODY foundicu AS
                 RETURN;
             END IF;
         END IF;
-        
         COMMIT;
-    EXCEPTION
-        WHEN user_is_banned 
-            THEN dbms_output.put_line('Abort. Current user is banned'); 
     END insert_loan;
 
     PROCEDURE insert_reservation(v_isbn IN editions.isbn%TYPE, reservation_date in DATE) IS
@@ -201,12 +189,18 @@ CREATE OR REPLACE PACKAGE BODY foundicu AS
         
     END insert_reservation;
 
-    -- IT SHOULD BE OK
     PROCEDURE record_books_returning(copy_signature IN loans.signature%TYPE) IS
+        count_users NUMBER;
         loan_count NUMBER;
         no_loan_found EXCEPTION;
         multiple_loans_found EXCEPTION;
     BEGIN   
+        SELECT COUNT (*) INTO count_users FROM USERS
+            WHERE USER_ID = current_user;
+
+        IF count_users = 0 
+            THEN RAISE_APPLICATION_ERROR(-20001, 'Current user ('||current_user||') doesnt exist');
+        END IF;
         -- CHECK IF THE BOOK IS BEING LOANED BY CURRENT USER
         SELECT COUNT(1) INTO loan_count FROM loans l
             WHERE l.signature = copy_signature 
@@ -221,13 +215,15 @@ CREATE OR REPLACE PACKAGE BODY foundicu AS
 
         -- UPDATE RETURN OF LOAN
         UPDATE loans SET return = SYSDATE 
-            WHERE signature = signature AND user_id = current_user;
+            WHERE signature = copy_signature AND user_id = current_user;
+
+        dbms_output.put_line('Copy of book '||copy_signature||' loaned to user with id '||current_user||' successfully returned.');
         COMMIT;
     EXCEPTION
         WHEN no_loan_found THEN
-            dbms_output.put_line('Error. No unreturned loan of this copy by current user has been found.');
+            dbms_output.put_line('Error. No unreturned loan of this copy ('||copy_signature||') by current user ('||current_user||') has been found.');
         WHEN multiple_loans_found THEN
-            dbms_output.put_line('Error. Found multiple unreturned loans of the same book by current user.');
+            dbms_output.put_line('Error. Found multiple unreturned loans of the same copy ('||copy_signature||') by current user ('||current_user||').');
     END record_books_returning;
     
 

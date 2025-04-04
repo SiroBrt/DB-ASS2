@@ -85,3 +85,6 @@ INSERT INTO SERVICES (TOWN, PROVINCE, BUS, TASKDATE, PASSPORT)
     VALUES ('Paramo de los Sequillos', 'Cuenca', 'BUS-017', 
     TO_DATE('06-APR-25', 'DD-MON-YY'), 'ESP>>101010101111');
     
+
+-- call procedure to insert loan
+EXEC foundicu.insert_loan('YC183');

@@ -67,6 +67,7 @@
     -- SELECT * FROM loans WHERE user_id=9994309824;
 
 ---- TASK 1.3.3
+    -- CREATE VIEW TABLE
     CREATE OR REPLACE VIEW my_reservations AS
     SELECT 
         SIGNATURE,
@@ -80,6 +81,7 @@
     WHERE l.user_id = foundicu.get_current_user() AND l.type = 'R'
     WITH CHECK OPTION;  
 
+    -- ALLOW INSERTION, DELETION AND UPDATE ONLY ON DATES AND TIME
     CREATE OR REPLACE TRIGGER my_reservations_trigger
         INSTEAD OF INSERT OR UPDATE ON my_reservations
         FOR EACH ROW
@@ -88,14 +90,12 @@
             INSERT INTO LOANS (SIGNATURE, USER_ID, STOPDATE, TOWN, PROVINCE, TYPE, TIME, RETURN) 
                 VALUES (:NEW.SIGNATURE, foundicu.get_current_user(), :NEW.STOPDATE, :NEW.TOWN, :NEW.PROVINCE, :NEW.TYPE, :NEW.TIME, :NEW.RETURN); 
         ELSIF UPDATING THEN
-            IF :OLD.SIGNATURE!=:NEW.SIGNATURE OR :OLD.TYPE!=:NEW.TYPE 
+            IF :OLD.SIGNATURE!=:NEW.SIGNATURE OR :OLD.TYPE!=:NEW.TYPE OR :OLD.TOWN!=:NEW.TOWN OR :OLD.PROVINCE!=:NEW.PROVINCE
                 THEN RAISE_APPLICATION_ERROR(-20043, 'Error. Only date and time from my_reservations are allowed to be changed');
             END IF;
 
             UPDATE loans SET 
                 STOPDATE = :NEW.STOPDATE, 
-                TOWN = :NEW.TOWN, 
-                PROVINCE = :NEW.PROVINCE,
                 TIME = :NEW.TIME
                 WHERE SIGNATURE = :OLD.SIGNATURE 
                     AND USER_ID = foundicu.get_current_user();

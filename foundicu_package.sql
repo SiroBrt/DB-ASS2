@@ -193,38 +193,38 @@ CREATE OR REPLACE PACKAGE BODY foundicu AS
 
     PROCEDURE record_books_returning(copy_signature IN loans.signature%TYPE) IS
         count_users NUMBER;
-        loan_count NUMBER;
-        no_loan_found EXCEPTION;
-        multiple_loans_found EXCEPTION;
+        loan_date loans.stopdate%type;
+        ban_days NUMBER;
     BEGIN   
-        SELECT COUNT (*) INTO count_users FROM USERS
+        SELECT COUNT(*) INTO count_users FROM USERS
             WHERE USER_ID = current_user;
 
         IF count_users = 0 
             THEN RAISE_APPLICATION_ERROR(-20001, 'Current user ('||current_user||') doesnt exist');
         END IF;
         -- CHECK IF THE BOOK IS BEING LOANED BY CURRENT USER
-        SELECT COUNT(1) INTO loan_count FROM loans l
+        SELECT stopdate INTO loan_date FROM loans l
             WHERE l.signature = copy_signature 
                 AND l.user_id = current_user
                 AND l.return IS NULL;
-        
-        IF loan_count = 0
-            THEN RAISE no_loan_found;
-        ELSIF loan_count > 1
-            THEN RAISE multiple_loans_found;
-        END IF;
 
         -- UPDATE RETURN OF LOAN
         UPDATE loans SET return = SYSDATE 
             WHERE signature = copy_signature AND user_id = current_user;
-
         dbms_output.put_line('Copy of book '||copy_signature||' loaned to user with id '||current_user||' successfully returned.');
+        
+        -- BANNING USER IF RETURNED LATE
+        ban_days := SYSDATE-loan_date-14;
+        IF ban_days > 0 THEN
+            UPDATE users SET ban_up2=SYSDATE+ban_days WHERE USER_ID = current_user; 
+            dbms_output.put_line('Copy of book '||copy_signature||' returned late, banning current user '||current_user||' to '||(SYSDATE+ban_days));
+        END IF;
+
         COMMIT;
     EXCEPTION
-        WHEN no_loan_found THEN
+        WHEN NO_DATA_FOUND THEN
             dbms_output.put_line('Error. No unreturned loan of this copy ('||copy_signature||') by current user ('||current_user||') has been found.');
-        WHEN multiple_loans_found THEN
+        WHEN TOO_MANY_ROWS THEN
             dbms_output.put_line('Error. Found multiple unreturned loans of the same copy ('||copy_signature||') by current user ('||current_user||').');
     END record_books_returning;
     

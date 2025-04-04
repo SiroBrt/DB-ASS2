@@ -31,6 +31,7 @@ CREATE OR REPLACE PACKAGE BODY foundicu AS
         -- go through users and check by primary key if there is such user as current
         SELECT MAX(BAN_UP2), COUNT (*) INTO ban_date, count_users FROM USERS
             WHERE USER_ID = current_user;
+            
         IF count_users = 0 THEN
             -- if nUot, raise error
             dbms_output.put_line('Error. Current user does not exist');

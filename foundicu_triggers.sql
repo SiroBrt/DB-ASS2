@@ -36,6 +36,7 @@
         WHEN NO_DATA_FOUND 
             THEN dbms_output.put_line('Data Integrity Error. User not found'); 
     END restrict_library_posts;
+    /
 
 
 ---- TASK 1.4.B
@@ -57,7 +58,7 @@
             END IF;
         END BEFORE EACH ROW;
     END copy_deregistration;
-
+    /
 
 ---- TASK 1.4.D
     -- Add new constraint to loans to avoid exploits
@@ -80,6 +81,7 @@
             WHERE title = book_reads.title AND author = book_reads.author;
         END LOOP;
     END;
+    /
 
     --- Create trigger that updates read counter upon new loan insertion, update or deletion.
     CREATE OR REPLACE TRIGGER update_book_read
@@ -123,3 +125,4 @@
             END IF;
         END AFTER EACH ROW;
     END;
+    /

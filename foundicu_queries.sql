@@ -1,12 +1,6 @@
 -- ---------------------- QUERIES ---------------------
 -- ----------------------------------------------------
 
--- QUESTIONS
--- WHAT DO WE CONSIDER AS BOOKS WITH EDITIONS IN AT LEAST THREE LANGUAGE? DOES ADDITIONAL LANGUAGE COUNT?
--- WHAT IS SENIORITY WITHOUT CONTRACT END DATE?
--- DO WE TAKE THE FIRST EVER SERVICE BY THE DRIVER AS THE STARTING POINT FOR ACTIVE YEARS? WHAT IS THE END DATE?
-
-
 --  ------------------  BoreBooks  ----------------------
 --  -----------------------------------------------------
 --  Books: 

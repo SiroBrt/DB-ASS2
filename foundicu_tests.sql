@@ -51,6 +51,15 @@ insert into loans values('NG473', 1546522482, '01-MAR-00', 'Villaverde', 'Madrid
   INSERT INTO my_data VALUES('1', '1111', NULL, SYSDATE, '', '', '', NULL, 1111111111111, 'P', NULL);
 
 -- 1.3.3 TESTS
+  BEGIN
+    FOUNDICU.SET_CURRENT_USER(1546522482);
+  END;
+  /
+  INSERT INTO my_reservations VALUES('NE000', '16-NOV-24', 'Sotolemures', 'Barcelona', 'R', 750, NULL);
+  SELECT * FROM my_reservations;
+  UPDATE my_reservations SET signature='IJ548' WHERE signature='NE000';     
+  UPDATE my_reservations SET TIME=2000 WHERE signature='NE000';
+  DELETE FROM my_reservations WHERE SIGNATURE='NE000' AND STOPDATE='16-NOV-24';
 
 -- 1.4.A TESTS
   -- INSERT LIBRARY POST: ERROR

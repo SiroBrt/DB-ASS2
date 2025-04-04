@@ -1,20 +1,28 @@
 -- PACKAGE HEADER
 CREATE OR REPLACE PACKAGE foundicu AS 
-    -- TYPE my_type IS RECORD (...);
     current_user CHAR(10);
+    PROCEDURE set_current_user(new_user IN current_user%TYPE);
+    FUNCTION get_current_user RETURN current_user%TYPE;
+
     PROCEDURE insert_loan(copy_signature IN loans.signature%TYPE);
     PROCEDURE insert_reservation(v_isbn IN editions.isbn%TYPE, reservation_date in date);
     PROCEDURE record_books_returning(copy_signature IN loans.signature%TYPE);
-  
-    PROCEDURE set_current_user(new_user IN current_user%TYPE);
-    FUNCTION get_current_user RETURN current_user%TYPE;
 END foundicu;
 /
 
 
 -- PACKAGE BODY
 CREATE OR REPLACE PACKAGE BODY foundicu AS
-    -- THIS SHIT IS NOT FINISHED AND I HATE THIS PUTA MIERDA
+    PROCEDURE set_current_user(new_user IN current_user%TYPE) IS
+    BEGIN
+        current_user := new_user;
+    END set_current_user;
+
+    FUNCTION get_current_user RETURN current_user%TYPE IS 
+    BEGIN
+        RETURN current_user;
+    END get_current_user;
+
     PROCEDURE insert_loan(copy_signature IN loans.signature%TYPE) IS
         --reservated NUMBER;
         ban_date users.BAN_UP2%TYPE;
@@ -223,15 +231,6 @@ CREATE OR REPLACE PACKAGE BODY foundicu AS
     END record_books_returning;
     
 
-    PROCEDURE set_current_user(new_user IN current_user%TYPE) IS
-    BEGIN
-        current_user := new_user;
-    END set_current_user;
-
-    FUNCTION get_current_user RETURN current_user%TYPE IS 
-    BEGIN
-        RETURN current_user;
-    END get_current_user;
 END foundicu;
 /
 

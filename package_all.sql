@@ -131,7 +131,7 @@ CREATE OR REPLACE PACKAGE BODY foundicu AS
     BEGIN
         BEGIN
         -- checks that the current USER exists 
-            SELECT * INTO user_data FROM users WHERE users.user_id = current_user;
+        SELECT * INTO user_data FROM users WHERE users.user_id = current_user;
         EXCEPTION
             WHEN NO_DATA_FOUND
                 THEN dbms_output.put_line('Error. Current user does not exist.');
@@ -191,7 +191,6 @@ CREATE OR REPLACE PACKAGE BODY foundicu AS
         INSERT INTO LOANS (SIGNATURE, USER_ID, STOPDATE, TOWN, PROVINCE, TYPE, "TIME", RETURN) 
             VALUES (copy_signature, current_user, reservation_date, user_data.town, user_data.province, 'R', DEFAULT, reservation_date + 14); -- to have return date two weeks from reservation
         
-
     END insert_reservation;
 
     -- IT SHOULD BE OK

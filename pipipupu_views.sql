@@ -26,7 +26,7 @@
 ---- TASK 1.3.2
     CREATE OR REPLACE VIEW my_loans AS
     SELECT 
-        l.SIGNATURE,
+        l.signature,
         l.STOPDATE,
         l.TOWN,
         l.PROVINCE,
@@ -35,14 +35,32 @@
         l.RETURN,
         p.POST_DATE,
         p.TEXT,
-        p.LIKES,
-        p.DISLIKES
+        p.likes,
+        p.dislikes
     FROM loans l
     LEFT JOIN posts p ON l.signature = p.signature
     WHERE l.user_id = foundicu.get_current_user() AND l.type = 'L'
     WITH CHECK OPTION;
 
-    -- TESTS
+    -- Allow update post attribute
+    -- Disallow insertion and deletion
+    CREATE OR REPLACE TRIGGER my_loans_trigger
+        INSTEAD OF UPDATE OF text ON my_reservations
+    DECLARE
+        current_user_id users.user_id%TYPE;
+    BEGIN
+        current_user_id := foundicu.get_current_user()
+
+        -- SOME MORE CODE HERE TO ENSURE INSERTION
+
+
+        INSERT INTO loans
+            VALUES (:NEW.signature, current_user_id, :NEW.stopdate, :NEW.town, :NEW.province :NEW.type, :NEW.time, :NEW.return);
+        INSERT INTO posts
+            VALUES (:NEW.signature, current_user_id, :NEW.stopdate, :NEW.post_date, :NEW.text :NEW.likes, :NEW.dislikes);
+    END my_reservations_trigger;
+
+    -- -- TESTS
     -- SELECT USER_ID FROM posts WHERE TEXT IS NOT NULL AND ROWNUM=1;
     -- EXEC foundicu.set_current_user(9994309824);
     -- SELECT * FROM my_loans;

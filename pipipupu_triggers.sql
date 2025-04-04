@@ -1,6 +1,43 @@
 -- ---------------------- TRIGGERS ---------------------
 -- ----------------------------------------------------
 
+---- TASK 1.4.A
+    -- Delete posts from libraries
+    DELETE FROM POSTS
+        WHERE USER_ID IN (
+            SELECT DISTINCT USER_ID 
+                FROM USERS 
+                WHERE type='L'
+        );
+     
+    -- Trigger for restricting library posts
+    CREATE OR REPLACE TRIGGER restrict_library_posts
+        BEFORE INSERT OR UPDATE OF USER_ID ON posts
+        FOR EACH ROW
+    DECLARE
+        user_type users.type%TYPE;
+    BEGIN
+        IF UPDATING THEN
+            SELECT type INTO user_type FROM users 
+                WHERE user_id=:OLD.user_id;
+            IF user_type='L' THEN 
+                RAISE_APPLICATION_ERROR(-20001, 'Error. Libraries cannot write posts');
+                RETURN;
+            END IF;
+        ELSIF INSERTING THEN
+            SELECT type INTO user_type FROM users 
+                WHERE user_id=:NEW.user_id;
+            IF user_type='L' THEN 
+                RAISE_APPLICATION_ERROR(-20001, 'Error. Libraries cannot write posts');
+                RETURN;
+            END IF;
+        END IF;
+    EXCEPTION
+        WHEN NO_DATA_FOUND 
+            THEN dbms_output.put_line('Data Integrity Error. User not found'); 
+    END restrict_library_posts;
+
+
 ---- TASK 1.4.B
     -- Prevents changing status of 'D' copies
     -- Updates deregistration date when copy is deregistered
@@ -14,23 +51,24 @@
                     RAISE_APPLICATION_ERROR(-20001, 'Cannot change copy condition from deregistered to another value (they are already physically destroyed)!');
                 END IF;
             END IF;
-        END BEFORE EACH ROW;
 
-        -- Update deregistration date
-        AFTER EACH ROW IS
-        BEGIN
-            IF :NEW.DEREGISTERED='D' THEN
-                UPDATE copies
-                    SET DEREGISTERED = SYSDATE
-                    WHERE SIGNATURE = :NEW.SIGNATURE;
+            IF :NEW.CONDITION='D' THEN
+                :NEW.DEREGISTERED := SYSDATE;
             END IF;
-        END AFTER EACH ROW;
+        END BEFORE EACH ROW;
     END copy_deregistration;
+
+    SELECT * FROM copies WHERE condition='D';
+    SELECT loans.signature, condition FROM loans 
+        LEFT JOIN copies
+        ON loans.signature=copies.signature
+        WHERE ROWNUM=1;
+
 
 
 ---- TASK 1.4.D
     -- Add new constraint to loans to avoid exploits
-    ALTER TABLE loans ADD CONSTRAINT ck_type CHECK (condition in ('L', 'R') )
+    ALTER TABLE loans ADD CONSTRAINT ck_type CHECK (type in ('L', 'R'));
 
     -- Create new column 'reads' in table 'books'
     ALTER TABLE books ADD reads INTEGER DEFAULT 0;
@@ -50,9 +88,9 @@
         END LOOP;
     END;
 
-    ---- Create trigger that updates read counter upon new loan insertion, update or deletion.
+    --- Create trigger that updates read counter upon new loan insertion, update or deletion.
     CREATE OR REPLACE TRIGGER update_book_read
-        FOR INSERT OR UPDATE OF types OR DELETE ON employees
+        FOR INSERT OR UPDATE OF type OR DELETE ON loans
     COMPOUND TRIGGER
         loan_title editions.title%TYPE;
         loan_author editions.author%TYPE;
@@ -61,7 +99,7 @@
         BEGIN
             IF UPDATING THEN
                 IF :NEW.type = 'R' AND :OLD.type = 'L' THEN
-                    RAISE_APPLICATION_ERROR(-20001, 'Cannot change froma loan to a reservation!');
+                    RAISE_APPLICATION_ERROR(-20001, 'Cannot change from a loan to a reservation!');
                 END IF;
             END IF;
         END BEFORE EACH ROW;
@@ -79,12 +117,7 @@
                     SET reads=reads-1 
                     WHERE title=loan_title AND author=loan_author;
 
-                RETURN; -- Skip processing if the previous type was 'L'
-            ELSIF UPDATING THEN
-                IF :OLD.TYPE = 'L' THEN
-                    RETURN; -- Skip processing if the previous type was 'L'
-                END IF;
-            ELSE
+            ELSIF (UPDATING AND :OLD.TYPE <> 'L') OR INSERTING THEN
                 -- Obtain loan's book title and author
                 SELECT e.title, e.author INTO loan_title, loan_author FROM editions e
                     JOIN copies c ON e.isbn=c.isbn

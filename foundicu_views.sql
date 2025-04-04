@@ -39,9 +39,8 @@
     WITH CHECK OPTION;
 
     -- Allow update post attribute
-    -- Disallow insertion and deletion
     CREATE OR REPLACE TRIGGER my_loans_trigger
-        INSTEAD OF INSERT OR UPDATE
+        INSTEAD OF UPDATE
         ON my_loans
         FOR EACH ROW
     BEGIN
@@ -60,12 +59,17 @@
     END my_loans_trigger;
     /
 
-    CREATE OR REPLACE TRIGGER block_delete_my_loans
-        INSTEAD OF DELETE ON my_loans
+    -- Disallow insertion and deletion
+    CREATE OR REPLACE TRIGGER guard_my_loans
+        INSTEAD OF INSERT OR DELETE ON my_loans
         FOR EACH ROW
     BEGIN
-        RAISE_APPLICATION_ERROR(-20032, 'Deletion is not allowed on my_loans view.');
-    END;
+        IF INSERTING THEN
+            RAISE_APPLICATION_ERROR(-20032, 'Insertion is not allowed on my_loans view.');
+        ELSIF DELETING THEN
+            RAISE_APPLICATION_ERROR(-20032, 'Deletion is not allowed on my_loans view.');
+        END IF;
+    END guard_my_loans;
     /
 
     -- -- TESTS
